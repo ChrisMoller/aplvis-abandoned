@@ -1,3 +1,24 @@
+/*
+    This file is part of GNU APL, a free implementation of the
+    ISO/IEC Standard 13751, "Programming Language APL, Extended"
+
+    Copyright (C) 2020 Chris Moller
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -5,12 +26,16 @@
 #define _GNU_SOURCE
 #include <gtk/gtk.h>
 #include <glib/gi18n-lib.h>
+
 #include <alloca.h>
 #include <malloc.h>
 #include <values.h>
-//#include <iconv.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/inotify.h>
+
 #include <plplot.h>
 #include <cairo/cairo-pdf.h>
 #include <cairo/cairo-ps.h>
@@ -35,6 +60,10 @@ static GtkWidget       *axis_y_label;
 static GtkAdjustment   *axis_y_min_adj;
 static GtkAdjustment   *axis_y_max_adj;
 static GtkWidget       *expression;
+static GtkWidget       *status;
+static guint	        top_context_id = -1;
+static gchar 	       *contents = NULL;
+static gsize            offset = 0;
 
 PLFLT *xvec= NULL;
 PLFLT *yvec= NULL;
@@ -158,6 +187,8 @@ build_menu (GtkWidget *vbox)
   gtk_box_pack_start (GTK_BOX (vbox), GTK_WIDGET (menubar), FALSE, FALSE, 2);
 }
 
+static GMutex mutex;
+
 #define expvar "expvar⍙"
 
 static void
@@ -175,9 +206,37 @@ expression_activate_cb (GtkEntry *entry,
 				      &items_written,
 				      NULL);
   apl_exec_ucs (cmd_ucs);
+  g_mutex_trylock (&mutex);
   APL_value expval = get_var_value(expvar, "something");
-  rank =  get_rank (expval);
+  g_mutex_unlock (&mutex);
+  if (contents) {
+  }
+  if (expval == NULL) {
+    if (top_context_id != -1)
+      gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
+    guint context_id =
+      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
+				    _ ("Invalid expval"));
+    top_context_id =
+      gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
+			  _ ("Null return from expression evaluation"));
+    return;
+  }
   count = get_element_count (expval);
+  int i;
+  for (i = 0; i < count; i++) {
+    if (!is_numeric (expval, i)) break;
+  }
+  if (i < count) {
+    guint context_id =
+      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
+				    _ ("Non-numeric expression"));
+    gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
+			_ ("Non-numeric result in expression"));
+    return;
+  }
+  
+  rank =  get_rank (expval);
   if (xvec) free (xvec);
   if (yvec) free (yvec);
   xmax = ymax = -MAXDOUBLE;
@@ -244,11 +303,76 @@ expression_activate_cb (GtkEntry *entry,
   }
 }
 
+static gpointer
+watch_thread_func (gpointer data)
+{
+  gchar *fn = (gchar *)data;
+  int inotify_fd = inotify_init ();
+  FILE *inotify_fp = fdopen(inotify_fd, "r");
+  inotify_add_watch (inotify_fd, fn,
+		     IN_CREATE |
+		     IN_MODIFY |
+		     IN_CLOSE_WRITE);
+  while(1) {
+#define BUF_LEN (10 * (sizeof(struct inotify_event) + NAME_MAX + 1))
+    char buf[BUF_LEN] __attribute__ ((aligned(8)));
+    ssize_t sz = read (inotify_fd, buf, BUF_LEN);
+    if (sz < 0) clearerr (inotify_fp);
+    else {
+      usleep (100);
+      g_mutex_trylock (&mutex);
+      gsize length = 0;
+      if (contents) g_free (contents);
+      contents = NULL;
+      g_file_get_contents (fn,
+			   &contents,
+			   &length,
+			   NULL);
+      g_mutex_unlock (&mutex);
+      if (contents) {
+	char *p = offset + contents;
+	for (; *p; p++) 
+	  if (*p == '\n' || *p == '^') *p = ' ';
+	while (*--p == ' ') *p = 0;
+#if 1
+	if (top_context_id != -1)
+	  gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
+	guint context_id =
+	  gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
+				    _ ("APL error"));
+	top_context_id =
+	  gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
+			      offset + contents);
+#endif
+	offset = length;
+	g_free (contents);
+      }
+#if 0
+  static int ct = 0;
+      struct inotify_event *ie = (struct inotify_event *)buf;
+      fprintf (stderr, "modified %s %d %d %d\n",
+	       fn, ct++, (int)sz, ie->mask);
+      if (sz > 16) {
+	ie++;
+	fprintf (stderr, "modifiedxx %s %d %d %d\n",
+		 fn, ct++, (int)sz, ie->mask);
+      }
+#endif
+    }
+  }
+  return NULL;
+}
 
 int
 main (int ac, char *av[])
 {
-  //  GError *error = NULL;
+  FILE*newout = freopen("./errs", "w", stdout);
+  stdout = newout;
+
+  /*  GThread *watch_thread =*/
+    g_thread_new ("watch_thread",
+		  watch_thread_func,
+		  "./errs");
 
   GOptionEntry entries[] =
     {
@@ -364,6 +488,13 @@ main (int ac, char *av[])
   gtk_entry_set_placeholder_text (GTK_ENTRY (expression),
 				  _ ("APL expression"));
   gtk_grid_attach (GTK_GRID (grid), expression, 0, row, col, 1);
+
+  /********** status bar ******/
+
+  row++;
+
+  status = gtk_statusbar_new ();
+  gtk_grid_attach (GTK_GRID (grid), status, 0, row, col, 1);
   
   /***** drawing area ****/
 
