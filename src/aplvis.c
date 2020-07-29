@@ -206,25 +206,35 @@ expression_activate_cb (GtkEntry *entry,
       }
     }
     else if (rank == 2) {
-      int i;
-      APL_value quad_io = get_var_value("⎕io", "something");
-      int qio = get_int (quad_io, 0);
+      int i, j;
+      //APL_value quad_io = get_var_value("⎕io", "something");
+      //      int qio = get_int (quad_io, 0);
+      count /= 2;
       xvec = malloc (count * sizeof(PLFLT));
       yvec = malloc (count * sizeof(PLFLT));
-      for (i = 0; i < count; i++) {
+      for (i = 0, j = 0; j < count; i++, j++) {
 	switch(get_type (expval, i)) {
 	case CCT_INT:	
-	  yvec[i] = ((PLFLT)get_int (expval, i));
+	  xvec[j] = ((PLFLT)get_int (expval, i));
 	  break;
 	case CCT_FLOAT:
-	  yvec[i] = (PLFLT)get_real (expval, i);
+	  xvec[j] = (PLFLT)get_real (expval, i);
 	  break;
 	}
-	xvec[i] = ((PLFLT)(qio + i));
-	if (xmax < xvec[i]) xmax = xvec[i];
-	if (xmin > xvec[i]) xmin = xvec[i];
-	if (ymax < yvec[i]) ymax = yvec[i];
-	if (ymin > yvec[i]) ymin = yvec[i];
+	if (xmax < xvec[j]) xmax = xvec[j];
+	if (xmin > xvec[j]) xmin = xvec[j];
+      }
+      for (j = 0; j < count; i++,j++) {
+	switch(get_type (expval, i)) {
+	case CCT_INT:	
+	  yvec[j] = ((PLFLT)get_int (expval, i));
+	  break;
+	case CCT_FLOAT:
+	  yvec[j] = (PLFLT)get_real (expval, i);
+	  break;
+	}
+	if (ymax < yvec[j]) ymax = yvec[j];
+	if (ymin > yvec[j]) ymin = yvec[j];
       }
     }
 
@@ -289,11 +299,11 @@ main (int ac, char *av[])
   axis_x_name = gtk_entry_new ();
   gtk_grid_attach (GTK_GRID (grid), axis_x_name, col++, row, 1, 1);
   gtk_entry_set_max_length (GTK_ENTRY (axis_x_name), 6);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_x_name),  _ ("Name"));
+  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_x_name),  _ ("X Name"));
   
   axis_x_label = gtk_entry_new ();
   gtk_entry_set_max_length (GTK_ENTRY (axis_x_label), 16);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_x_label),  _ ("Label"));
+  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_x_label),  _ ("X Label"));
   gtk_grid_attach (GTK_GRID (grid), axis_x_label, col++, row, 1, 1);
   axis_x_min_adj = gtk_adjustment_new (-1.0, 
 				       -MAXDOUBLE,
@@ -321,11 +331,11 @@ main (int ac, char *av[])
   axis_y_name = gtk_entry_new ();
   gtk_grid_attach (GTK_GRID (grid), axis_y_name, col++, row, 1, 1);
   gtk_entry_set_max_length (GTK_ENTRY (axis_y_name), 6);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_y_name),  _ ("Name"));
+  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_y_name),  _ ("Y Name"));
   
   axis_y_label = gtk_entry_new ();
   gtk_entry_set_max_length (GTK_ENTRY (axis_y_label), 16);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_y_label),  _ ("Label"));
+  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_y_label),  _ ("Y Label"));
   gtk_grid_attach (GTK_GRID (grid), axis_y_label, col++, row, 1, 1);
   axis_y_min_adj = gtk_adjustment_new (-1.0, 
 				       -MAXDOUBLE,
