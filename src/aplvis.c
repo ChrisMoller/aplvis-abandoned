@@ -64,6 +64,7 @@ static GtkWidget       *status;
 static guint	        top_context_id = -1;
 static gchar 	       *contents = NULL;
 static gsize            offset = 0;
+static gsize 	        length = 0;
 
 PLFLT *xvec= NULL;
 PLFLT *yvec= NULL;
@@ -208,10 +209,29 @@ expression_activate_cb (GtkEntry *entry,
   apl_exec_ucs (cmd_ucs);
   g_mutex_trylock (&mutex);
   APL_value expval = get_var_value(expvar, "something");
-  g_mutex_unlock (&mutex);
   if (contents) {
+    if (top_context_id != -1)
+      gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
+    guint context_id =
+      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
+				    _ ("APL error"));
+#if 1
+    top_context_id =
+      gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
+			  offset + contents);
+#else
+    static gchar *msg = NULL;
+    if (msg) g_free (msg);
+    msg = g_strdup_printf ("%s: %s", _ ("APL error"), offset + contents);
+    top_context_id =
+      gtk_statusbar_push (GTK_STATUSBAR (status), context_id, msg);
+    //g_free (msg);
+#endif
+    offset = length;
   }
+  g_mutex_unlock (&mutex);
   if (expval == NULL) {
+#if 0
     if (top_context_id != -1)
       gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
     guint context_id =
@@ -220,6 +240,7 @@ expression_activate_cb (GtkEntry *entry,
     top_context_id =
       gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
 			  _ ("Null return from expression evaluation"));
+#endif
     return;
   }
   count = get_element_count (expval);
@@ -321,7 +342,7 @@ watch_thread_func (gpointer data)
     else {
       usleep (100);
       g_mutex_trylock (&mutex);
-      gsize length = 0;
+      length = 0;
       if (contents) g_free (contents);
       contents = NULL;
       g_file_get_contents (fn,
@@ -334,30 +355,7 @@ watch_thread_func (gpointer data)
 	for (; *p; p++) 
 	  if (*p == '\n' || *p == '^') *p = ' ';
 	while (*--p == ' ') *p = 0;
-#if 1
-	if (top_context_id != -1)
-	  gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
-	guint context_id =
-	  gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
-				    _ ("APL error"));
-	top_context_id =
-	  gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
-			      offset + contents);
-#endif
-	offset = length;
-	g_free (contents);
       }
-#if 0
-  static int ct = 0;
-      struct inotify_event *ie = (struct inotify_event *)buf;
-      fprintf (stderr, "modified %s %d %d %d\n",
-	       fn, ct++, (int)sz, ie->mask);
-      if (sz > 16) {
-	ie++;
-	fprintf (stderr, "modifiedxx %s %d %d %d\n",
-		 fn, ct++, (int)sz, ie->mask);
-      }
-#endif
     }
   }
   return NULL;
