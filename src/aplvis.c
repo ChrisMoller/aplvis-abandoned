@@ -66,11 +66,180 @@ static gchar 	       *contents = NULL;
 static gsize            offset = 0;
 static gsize 	        length = 0;
 
+#define DEFAULT_GRANULARITY	100
+gint granularity = DEFAULT_GRANULARITY;
 PLFLT *xvec= NULL;
 PLFLT *yvec= NULL;
 PLFLT xmin, xmax, ymin, ymax;
 int rank =  0;
 uint64_t count = 0;
+
+#define expvar "expvar⍙"
+
+static void
+expression_activate_cb (GtkEntry *entry,
+			gpointer  user_data)
+{
+  const gchar *expr = gtk_entry_get_text (GTK_ENTRY (entry));
+  if (!expr || !*expr) return;
+
+  const gchar *x_name = gtk_entry_get_text (GTK_ENTRY (axis_x_name));
+  gdouble x_adj_min =
+    gtk_adjustment_get_value (GTK_ADJUSTMENT (axis_x_min_adj));
+  gdouble x_adj_max =
+    gtk_adjustment_get_value (GTK_ADJUSTMENT (axis_x_max_adj));
+  if (x_adj_min ==  x_adj_max) {
+    // fixme dump status
+    return;
+  }
+  /***
+      min + (max - min)/ granularity × ⍳ granularity
+   ***/
+  gdouble konst = (x_adj_max - x_adj_min) / (double)granularity;
+  char *x_incr = g_strdup_printf ("%s←%g×⍳%d", x_name, konst, granularity);
+  char *p = x_incr;
+  for (; *p; p++) if (*p == '-') break;
+  if (*p) {
+  }
+
+  glong items_read;
+  glong items_written;
+  gunichar *x_incr_ucs = g_utf8_to_ucs4 (x_incr,
+					 (glong)strlen (x_incr),
+					 &items_read,
+					 &items_written,
+					 NULL);
+  g_free (x_incr);
+  apl_exec_ucs (x_incr_ucs);
+  g_free (x_incr_ucs);
+  
+  char *cmd = g_strdup_printf ("%s←%s", expvar, expr);
+
+  gunichar *cmd_ucs = g_utf8_to_ucs4 (cmd,
+				      (glong)strlen (cmd),
+				      &items_read,
+				      &items_written,
+				      NULL);
+  g_free (cmd);
+  apl_exec_ucs (cmd_ucs);
+  g_free (cmd_ucs);
+  //  g_mutex_trylock (&mutex);
+  APL_value expval = get_var_value(expvar, "something");
+  if (contents) {
+    if (top_context_id != -1)
+      gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
+    guint context_id =
+      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
+				    _ ("APL error"));
+    static gchar *msg = NULL;
+    if (msg) g_free (msg);
+    msg = g_strdup_printf ("%s: %s", _ ("APL error"), offset + contents);
+    top_context_id =
+      gtk_statusbar_push (GTK_STATUSBAR (status), context_id, msg);
+    //g_free (msg);
+    offset = length;
+  }
+  //  g_mutex_unlock (&mutex);
+  if (expval == NULL) {
+#if 0
+    if (top_context_id != -1)
+      gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
+    guint context_id =
+      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
+				    _ ("Invalid expval"));
+    top_context_id =
+      gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
+			  _ ("Null return from expression evaluation"));
+#endif
+    return;
+  }
+  count = get_element_count (expval);
+  int i;
+  for (i = 0; i < count; i++) {
+    if (!is_numeric (expval, i)) break;
+  }
+  if (i < count) {
+    guint context_id =
+      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
+				    _ ("Non-numeric expression"));
+    gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
+			_ ("Non-numeric result in expression"));
+    return;
+  }
+  
+  rank =  get_rank (expval);
+  if (xvec) free (xvec);
+  if (yvec) free (yvec);
+  xmax = ymax = -MAXDOUBLE;
+  xmin = ymin =  MAXDOUBLE;
+  if (count > 1) {
+    if (rank == 1) {
+      int i;
+      APL_value quad_io = get_var_value("⎕io", "something");
+      int qio = get_int (quad_io, 0);
+      xvec = malloc (count * sizeof(PLFLT));
+      yvec = malloc (count * sizeof(PLFLT));
+      for (i = 0; i < count; i++) {
+	switch(get_type (expval, i)) {
+	case CCT_INT:	
+	  yvec[i] = ((PLFLT)get_int (expval, i));
+	  break;
+	case CCT_FLOAT:
+	  yvec[i] = (PLFLT)get_real (expval, i);
+	  break;
+	}
+	xvec[i] = ((PLFLT)(qio + i));
+	if (xmax < xvec[i]) xmax = xvec[i];
+	if (xmin > xvec[i]) xmin = xvec[i];
+	if (ymax < yvec[i]) ymax = yvec[i];
+	if (ymin > yvec[i]) ymin = yvec[i];
+      }
+    }
+    else if (rank == 2) {
+      int i, j;
+      //APL_value quad_io = get_var_value("⎕io", "something");
+      //      int qio = get_int (quad_io, 0);
+      count /= 2;
+      xvec = malloc (count * sizeof(PLFLT));
+      yvec = malloc (count * sizeof(PLFLT));
+      for (i = 0, j = 0; j < count; i++, j++) {
+	switch(get_type (expval, i)) {
+	case CCT_INT:	
+	  xvec[j] = ((PLFLT)get_int (expval, i));
+	  break;
+	case CCT_FLOAT:
+	  xvec[j] = (PLFLT)get_real (expval, i);
+	  break;
+	}
+	if (xmax < xvec[j]) xmax = xvec[j];
+	if (xmin > xvec[j]) xmin = xvec[j];
+      }
+      for (j = 0; j < count; i++,j++) {
+	switch(get_type (expval, i)) {
+	case CCT_INT:	
+	  yvec[j] = ((PLFLT)get_int (expval, i));
+	  break;
+	case CCT_FLOAT:
+	  yvec[j] = (PLFLT)get_real (expval, i);
+	  break;
+	}
+	if (ymax < yvec[j]) ymax = yvec[j];
+	if (ymin > yvec[j]) ymin = yvec[j];
+      }
+    }
+
+    guint width = gtk_widget_get_allocated_width (da);
+    guint height = gtk_widget_get_allocated_height (da);
+    gtk_widget_queue_draw_area (da, 0, 0, width, height);
+  }
+}
+
+static void
+go_button_cb (GtkButton *button,
+	      gpointer   user_data)
+{
+  expression_activate_cb (NULL, NULL);
+}
 
 static void
 aplvis_quit (GtkWidget *object, gpointer data)
@@ -188,141 +357,7 @@ build_menu (GtkWidget *vbox)
   gtk_box_pack_start (GTK_BOX (vbox), GTK_WIDGET (menubar), FALSE, FALSE, 2);
 }
 
-static GMutex mutex;
-
-#define expvar "expvar⍙"
-
-static void
-expression_activate_cb (GtkEntry *entry,
-			gpointer  user_data)
-{
-  const gchar *expr = gtk_entry_get_text (GTK_ENTRY (entry));
-  char *cmd = g_strdup_printf ("%s←%s", expvar, expr);
-
-  glong items_read;
-  glong items_written;
-  gunichar *cmd_ucs = g_utf8_to_ucs4 (cmd,
-				      (glong)strlen (cmd),
-				      &items_read,
-				      &items_written,
-				      NULL);
-  apl_exec_ucs (cmd_ucs);
-  g_mutex_trylock (&mutex);
-  APL_value expval = get_var_value(expvar, "something");
-  if (contents) {
-    if (top_context_id != -1)
-      gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
-    guint context_id =
-      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
-				    _ ("APL error"));
-#if 1
-    top_context_id =
-      gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
-			  offset + contents);
-#else
-    static gchar *msg = NULL;
-    if (msg) g_free (msg);
-    msg = g_strdup_printf ("%s: %s", _ ("APL error"), offset + contents);
-    top_context_id =
-      gtk_statusbar_push (GTK_STATUSBAR (status), context_id, msg);
-    //g_free (msg);
-#endif
-    offset = length;
-  }
-  g_mutex_unlock (&mutex);
-  if (expval == NULL) {
-#if 0
-    if (top_context_id != -1)
-      gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
-    guint context_id =
-      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
-				    _ ("Invalid expval"));
-    top_context_id =
-      gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
-			  _ ("Null return from expression evaluation"));
-#endif
-    return;
-  }
-  count = get_element_count (expval);
-  int i;
-  for (i = 0; i < count; i++) {
-    if (!is_numeric (expval, i)) break;
-  }
-  if (i < count) {
-    guint context_id =
-      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
-				    _ ("Non-numeric expression"));
-    gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
-			_ ("Non-numeric result in expression"));
-    return;
-  }
-  
-  rank =  get_rank (expval);
-  if (xvec) free (xvec);
-  if (yvec) free (yvec);
-  xmax = ymax = -MAXDOUBLE;
-  xmin = ymin =  MAXDOUBLE;
-  if (count > 1) {
-    if (rank == 1) {
-      int i;
-      APL_value quad_io = get_var_value("⎕io", "something");
-      int qio = get_int (quad_io, 0);
-      xvec = malloc (count * sizeof(PLFLT));
-      yvec = malloc (count * sizeof(PLFLT));
-      for (i = 0; i < count; i++) {
-	switch(get_type (expval, i)) {
-	case CCT_INT:	
-	  yvec[i] = ((PLFLT)get_int (expval, i));
-	  break;
-	case CCT_FLOAT:
-	  yvec[i] = (PLFLT)get_real (expval, i);
-	  break;
-	}
-	xvec[i] = ((PLFLT)(qio + i));
-	if (xmax < xvec[i]) xmax = xvec[i];
-	if (xmin > xvec[i]) xmin = xvec[i];
-	if (ymax < yvec[i]) ymax = yvec[i];
-	if (ymin > yvec[i]) ymin = yvec[i];
-      }
-    }
-    else if (rank == 2) {
-      int i, j;
-      //APL_value quad_io = get_var_value("⎕io", "something");
-      //      int qio = get_int (quad_io, 0);
-      count /= 2;
-      xvec = malloc (count * sizeof(PLFLT));
-      yvec = malloc (count * sizeof(PLFLT));
-      for (i = 0, j = 0; j < count; i++, j++) {
-	switch(get_type (expval, i)) {
-	case CCT_INT:	
-	  xvec[j] = ((PLFLT)get_int (expval, i));
-	  break;
-	case CCT_FLOAT:
-	  xvec[j] = (PLFLT)get_real (expval, i);
-	  break;
-	}
-	if (xmax < xvec[j]) xmax = xvec[j];
-	if (xmin > xvec[j]) xmin = xvec[j];
-      }
-      for (j = 0; j < count; i++,j++) {
-	switch(get_type (expval, i)) {
-	case CCT_INT:	
-	  yvec[j] = ((PLFLT)get_int (expval, i));
-	  break;
-	case CCT_FLOAT:
-	  yvec[j] = (PLFLT)get_real (expval, i);
-	  break;
-	}
-	if (ymax < yvec[j]) ymax = yvec[j];
-	if (ymin > yvec[j]) ymin = yvec[j];
-      }
-    }
-
-    guint width = gtk_widget_get_allocated_width (da);
-    guint height = gtk_widget_get_allocated_height (da);
-    gtk_widget_queue_draw_area (da, 0, 0, width, height);
-  }
-}
+//static GMutex mutex;
 
 static gpointer
 watch_thread_func (gpointer data)
@@ -341,7 +376,7 @@ watch_thread_func (gpointer data)
     if (sz < 0) clearerr (inotify_fp);
     else {
       usleep (100);
-      g_mutex_trylock (&mutex);
+      //      g_mutex_trylock (&mutex);
       length = 0;
       if (contents) g_free (contents);
       contents = NULL;
@@ -349,13 +384,18 @@ watch_thread_func (gpointer data)
 			   &contents,
 			   &length,
 			   NULL);
-      g_mutex_unlock (&mutex);
       if (contents) {
 	char *p = offset + contents;
 	for (; *p; p++) 
 	  if (*p == '\n' || *p == '^') *p = ' ';
 	while (*--p == ' ') *p = 0;
+	p = offset + contents;
+	for (; *p; p++) {
+	  if (*p == ' ') offset++;
+	  else break;
+	}
       }
+      //      g_mutex_unlock (&mutex);
     }
   }
   return NULL;
@@ -493,6 +533,12 @@ main (int ac, char *av[])
 
   status = gtk_statusbar_new ();
   gtk_grid_attach (GTK_GRID (grid), status, 0, row, col, 1);
+
+  /************* go button **********/
+
+  GtkWidget *go_button = gtk_button_new_with_label (_ ("Go"));
+  g_signal_connect (go_button, "clicked",
+                    G_CALLBACK (go_button_cb), NULL);
   
   /***** drawing area ****/
 
