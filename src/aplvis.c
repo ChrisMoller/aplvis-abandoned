@@ -29,6 +29,7 @@
 
 #include <alloca.h>
 #include <malloc.h>
+#include <math.h>
 #include <values.h>
 #include <signal.h>
 #include <stdio.h>
@@ -99,15 +100,22 @@ expression_activate_cb (GtkEntry *entry,
       // fixme dump status
       return;
     }
+    gdouble k_incr = (x_adj_max - x_adj_min) / (double)granularity;
     /***
-	min + (max - min)/ granularity × ⍳ granularity
-    ***/
-    gdouble konst = (x_adj_max - x_adj_min) / (double)granularity;
-    char *x_incr = g_strdup_printf ("%s←%g×⍳%d", x_name, konst, granularity);
-    char *p = x_incr;
-    for (; *p; p++) if (*p == '-') break;
-    if (*p) {
-    }
+	1..4 ==> i 2 3 4 ==> 1 + 0 1 2 3 ==> 1 + ⍳(4 - 1)
+	4..1 ==> 4 3 2 1 ==> 4 - 0 1 2 3 ==> 4 - ⍳(4 - 1)
+	-4..-1 ==> -4 -3 -2 -1 ==> (0-4) + ⍳(4 - 1)
+	-1..-4 ==> -1 -2 -3 -4 ==> (0-1) - ⍳(4 - 1)
+     ***/
+#define INCR_FMT "%s ← (0%c%g) %c %g×⍳(%d)"
+    char *x_incr =
+      g_strdup_printf (INCR_FMT,
+		       x_name,
+		       ((x_adj_min < 0.0) ? '-' : '+'),
+		       fabs (x_adj_min),
+		       ((k_incr < 0.0) ? '-' : '+'),
+		       fabs (k_incr),
+		       granularity);
 
     gunichar *x_incr_ucs = g_utf8_to_ucs4 (x_incr,
 					   (glong)strlen (x_incr),
@@ -141,7 +149,7 @@ expression_activate_cb (GtkEntry *entry,
   int i;
   for (i = 0; i < count; i++) {
 #if 1
-    if (get_type(expval, i) & CCT_NUMERIC) break;
+    if (!(get_type(expval, i) & CCT_NUMERIC)) break;
 #else
     if (!is_numeric (expval, i)) break;
 #endif
@@ -354,7 +362,6 @@ monitor_changed (GFileMonitor      *monitor,
 {
   static off_t offset = 0;
   g_signal_handler_block (gfm, gsc);
-
   struct stat statbuf;
   fstat (fileno (newout), &statbuf);
   off_t size = statbuf.st_size;
