@@ -377,9 +377,22 @@ monitor_changed (GFileMonitor      *monitor,
   g_signal_handler_unblock (gfm, gsc);
 }
 
+static void
+sigint_handler (int sig, siginfo_t *si, void *data)
+{
+  unlink (newfn);
+}
+
 int
 main (int ac, char *av[])
 {
+  struct sigaction action;
+  action.sa_sigaction = sigint_handler;
+  sigemptyset (&action.sa_mask);
+  sigaction (SIGINT, &action, NULL);
+  sigaction (SIGQUIT, &action, NULL);
+  sigaction (SIGTERM, &action, NULL);
+  
   asprintf (&newfn, "/tmp/aplvis-%d-%d.log", (int)getuid (), (int)getpid ());
   newfd = memfd_create (newfn, 0);
   newout = freopen(newfn, "a+", stdout);
