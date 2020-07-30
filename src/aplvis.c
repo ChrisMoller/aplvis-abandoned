@@ -46,7 +46,7 @@
 #include <cairo/cairo-svg.h>
 #include <apl/libapl.h>
 
-
+#include "aplvis.h"
 
 #define DEFAULT_WIDTH  480
 #define DEFAULT_HEIGHT 320
@@ -55,21 +55,22 @@ static gint             width           = DEFAULT_WIDTH;
 static gint             height          = DEFAULT_HEIGHT;
 static GtkWidget       *window          = NULL;
 static GtkWidget       *da              = NULL;
-static GtkWidget       *axis_x_name;
-static GtkWidget       *axis_x_label;
-static GtkAdjustment   *axis_x_min_adj;
-static GtkAdjustment   *axis_x_max_adj;
-static GtkWidget       *axis_y_name;
-static GtkWidget       *axis_y_label;
-static GtkAdjustment   *axis_y_min_adj;
-static GtkAdjustment   *axis_y_max_adj;
-static GtkWidget       *expression;
 static GtkWidget       *status;
 static GFileMonitor    *gfm;
 static gulong           gsc;
 static char            *newfn;
 static FILE            *newout;
 static int              newfd;
+
+GtkWidget       *axis_x_name;
+GtkWidget       *axis_x_label;
+GtkAdjustment   *axis_x_min_adj;
+GtkAdjustment   *axis_x_max_adj;
+GtkWidget       *axis_y_name;
+GtkWidget       *axis_y_label;
+GtkAdjustment   *axis_y_min_adj;
+GtkAdjustment   *axis_y_max_adj;
+GtkWidget       *expression;
 
 #define DEFAULT_GRANULARITY	100
 gint granularity = DEFAULT_GRANULARITY;

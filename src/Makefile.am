@@ -1,8 +1,11 @@
 bin_PROGRAMS = aplvis
 #AM_YFLAGS = -d -v
 #AM_LFLAGS = -o$(LEX_OUTPUT_ROOT).c
-aplvis_SOURCES = aplvis.c \
+
+aplvis_SOURCES = aplvis.c aplvis.h \
+                 save.c save.h
 DISTCLEANFILES = .deps/*.P
+
 APL_LIB = -L `apl --show_lib_dir` -lapl
 #APL_LIB = -L /usr/local/lib/apl -lapl
 
