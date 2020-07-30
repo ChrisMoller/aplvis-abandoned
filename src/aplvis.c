@@ -66,7 +66,9 @@ static GtkWidget       *expression;
 static GtkWidget       *status;
 static GFileMonitor    *gfm;
 static gulong           gsc;
+static char            *newfn;
 static FILE            *newout;
+static int              newfd;
 
 #define DEFAULT_GRANULARITY	100
 gint granularity = DEFAULT_GRANULARITY;
@@ -227,6 +229,7 @@ go_button_cb (GtkButton *button,
 static void
 aplvis_quit (GtkWidget *object, gpointer data)
 {
+  unlink (newfn);
   gtk_main_quit ();
 }
 
@@ -357,7 +360,7 @@ monitor_changed (GFileMonitor      *monitor,
   off_t size = statbuf.st_size;
   if (size > offset) {
     gchar *bfr = g_malloc0 (16 + (size_t)(size-offset));
-    int fd = open ("./errs", O_RDONLY);
+    int fd = open (newfn, O_RDONLY);
     lseek (fd, offset, SEEK_SET);
     read (fd, bfr, (size_t)size);
     char *p = bfr;
@@ -377,11 +380,12 @@ monitor_changed (GFileMonitor      *monitor,
 int
 main (int ac, char *av[])
 {
-  unlink ("./errs");
-  newout = freopen("./errs", "a+", stdout);
+  asprintf (&newfn, "/tmp/aplvis-%d-%d.log", (int)getuid (), (int)getpid ());
+  newfd = memfd_create (newfn, 0);
+  newout = freopen(newfn, "a+", stdout);
   stdout = newout;
 
-  GFile *gf = g_file_new_for_path ("./errs");
+  GFile *gf = g_file_new_for_path (newfn);
   gfm = g_file_monitor_file (gf,
 			     G_FILE_MONITOR_NONE, // GFileMonitorFlags flags,
 			     NULL,		// GCancellable *cancellable,
