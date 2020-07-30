@@ -3,7 +3,8 @@ bin_PROGRAMS = aplvis
 #AM_LFLAGS = -o$(LEX_OUTPUT_ROOT).c
 aplvis_SOURCES = aplvis.c \
 DISTCLEANFILES = .deps/*.P
-APL_LIB = -L `apl --show_lib_dir` -lapl -lstdc++
+APL_LIB = -L `apl --show_lib_dir` -lapl
+#APL_LIB = -L /usr/local/lib/apl -lapl
 
 
 aplvis_CFLAGS = -std=c99 -Wall -Werror \
@@ -11,7 +12,7 @@ aplvis_CFLAGS = -std=c99 -Wall -Werror \
               $(FONTCONFIG_CFLAGS) $(PLPLOT_CFLAGS)
 
 aplvis_LDFLAGS = -lm $(GTK_LIBS) $(CAIRO_LIBS) $(MAGICKWAND_LIBS) \
-              $(FONTCONFIG_LIBS)  $(PLPLOT_LIBS) $(APL_LIB)
+              $(FONTCONFIG_LIBS)  $(PLPLOT_LIBS) $(APL_LIB) -lstdc++
 
 # -leak-check=full
 #  algrind --tool=memcheck --leak-check=full --leak-resolution=high -

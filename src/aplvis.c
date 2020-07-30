@@ -34,7 +34,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/inotify.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <plplot.h>
 #include <cairo/cairo-pdf.h>
@@ -61,10 +64,9 @@ static GtkAdjustment   *axis_y_min_adj;
 static GtkAdjustment   *axis_y_max_adj;
 static GtkWidget       *expression;
 static GtkWidget       *status;
-static guint	        top_context_id = -1;
-static gchar 	       *contents = NULL;
-static gsize            offset = 0;
-static gsize 	        length = 0;
+static GFileMonitor    *gfm;
+static gulong           gsc;
+static FILE            *newout;
 
 #define DEFAULT_GRANULARITY	100
 gint granularity = DEFAULT_GRANULARITY;
@@ -80,38 +82,40 @@ static void
 expression_activate_cb (GtkEntry *entry,
 			gpointer  user_data)
 {
+  glong items_read;
+  glong items_written;
   const gchar *expr = gtk_entry_get_text (GTK_ENTRY (entry));
   if (!expr || !*expr) return;
 
   const gchar *x_name = gtk_entry_get_text (GTK_ENTRY (axis_x_name));
-  gdouble x_adj_min =
-    gtk_adjustment_get_value (GTK_ADJUSTMENT (axis_x_min_adj));
-  gdouble x_adj_max =
-    gtk_adjustment_get_value (GTK_ADJUSTMENT (axis_x_max_adj));
-  if (x_adj_min ==  x_adj_max) {
-    // fixme dump status
-    return;
-  }
-  /***
-      min + (max - min)/ granularity × ⍳ granularity
-   ***/
-  gdouble konst = (x_adj_max - x_adj_min) / (double)granularity;
-  char *x_incr = g_strdup_printf ("%s←%g×⍳%d", x_name, konst, granularity);
-  char *p = x_incr;
-  for (; *p; p++) if (*p == '-') break;
-  if (*p) {
-  }
+  if (x_name && *x_name) {
+    gdouble x_adj_min =
+      gtk_adjustment_get_value (GTK_ADJUSTMENT (axis_x_min_adj));
+    gdouble x_adj_max =
+      gtk_adjustment_get_value (GTK_ADJUSTMENT (axis_x_max_adj));
+    if (x_adj_min ==  x_adj_max) {
+      // fixme dump status
+      return;
+    }
+    /***
+	min + (max - min)/ granularity × ⍳ granularity
+    ***/
+    gdouble konst = (x_adj_max - x_adj_min) / (double)granularity;
+    char *x_incr = g_strdup_printf ("%s←%g×⍳%d", x_name, konst, granularity);
+    char *p = x_incr;
+    for (; *p; p++) if (*p == '-') break;
+    if (*p) {
+    }
 
-  glong items_read;
-  glong items_written;
-  gunichar *x_incr_ucs = g_utf8_to_ucs4 (x_incr,
-					 (glong)strlen (x_incr),
-					 &items_read,
-					 &items_written,
-					 NULL);
-  g_free (x_incr);
-  apl_exec_ucs (x_incr_ucs);
-  g_free (x_incr_ucs);
+    gunichar *x_incr_ucs = g_utf8_to_ucs4 (x_incr,
+					   (glong)strlen (x_incr),
+					   &items_read,
+					   &items_written,
+					   NULL);
+    g_free (x_incr);
+    apl_exec_ucs (x_incr_ucs);
+    g_free (x_incr_ucs);
+  }
   
   char *cmd = g_strdup_printf ("%s←%s", expvar, expr);
 
@@ -125,44 +129,23 @@ expression_activate_cb (GtkEntry *entry,
   g_free (cmd_ucs);
   //  g_mutex_trylock (&mutex);
   APL_value expval = get_var_value(expvar, "something");
-  if (contents) {
-    if (top_context_id != -1)
-      gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
-    guint context_id =
-      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
-				    _ ("APL error"));
-    static gchar *msg = NULL;
-    if (msg) g_free (msg);
-    msg = g_strdup_printf ("%s: %s", _ ("APL error"), offset + contents);
-    top_context_id =
-      gtk_statusbar_push (GTK_STATUSBAR (status), context_id, msg);
-    //g_free (msg);
-    offset = length;
-  }
   //  g_mutex_unlock (&mutex);
   if (expval == NULL) {
-#if 0
-    if (top_context_id != -1)
-      gtk_statusbar_remove_all (GTK_STATUSBAR (status), top_context_id);
-    guint context_id =
-      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
-				    _ ("Invalid expval"));
-    top_context_id =
-      gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
-			  _ ("Null return from expression evaluation"));
-#endif
+    //    gtk_label_set_text (GTK_LABEL (status),
+    //			_ ("Null return from expression evaluation"));
     return;
   }
   count = get_element_count (expval);
   int i;
   for (i = 0; i < count; i++) {
+#if 1
+    if (get_type(expval, i) & CCT_NUMERIC) break;
+#else
     if (!is_numeric (expval, i)) break;
+#endif
   }
   if (i < count) {
-    guint context_id =
-      gtk_statusbar_get_context_id (GTK_STATUSBAR (status),
-				    _ ("Non-numeric expression"));
-    gtk_statusbar_push (GTK_STATUSBAR (status), context_id,
+    gtk_label_set_text (GTK_LABEL (status),
 			_ ("Non-numeric result in expression"));
     return;
   }
@@ -359,59 +342,54 @@ build_menu (GtkWidget *vbox)
 
 //static GMutex mutex;
 
-static gpointer
-watch_thread_func (gpointer data)
+static void
+monitor_changed (GFileMonitor      *monitor,
+                 GFile             *file,
+                 GFile             *other_file,
+                 GFileMonitorEvent  event_type,
+                 gpointer           user_data)
 {
-  gchar *fn = (gchar *)data;
-  int inotify_fd = inotify_init ();
-  FILE *inotify_fp = fdopen(inotify_fd, "r");
-  inotify_add_watch (inotify_fd, fn,
-		     IN_CREATE |
-		     IN_MODIFY |
-		     IN_CLOSE_WRITE);
-  while(1) {
-#define BUF_LEN (10 * (sizeof(struct inotify_event) + NAME_MAX + 1))
-    char buf[BUF_LEN] __attribute__ ((aligned(8)));
-    ssize_t sz = read (inotify_fd, buf, BUF_LEN);
-    if (sz < 0) clearerr (inotify_fp);
-    else {
-      usleep (100);
-      //      g_mutex_trylock (&mutex);
-      length = 0;
-      if (contents) g_free (contents);
-      contents = NULL;
-      g_file_get_contents (fn,
-			   &contents,
-			   &length,
-			   NULL);
-      if (contents) {
-	char *p = offset + contents;
-	for (; *p; p++) 
-	  if (*p == '\n' || *p == '^') *p = ' ';
-	while (*--p == ' ') *p = 0;
-	p = offset + contents;
-	for (; *p; p++) {
-	  if (*p == ' ') offset++;
-	  else break;
-	}
-      }
-      //      g_mutex_unlock (&mutex);
-    }
+  static off_t offset = 0;
+  g_signal_handler_block (gfm, gsc);
+
+  struct stat statbuf;
+  fstat (fileno (newout), &statbuf);
+  off_t size = statbuf.st_size;
+  if (size > offset) {
+    gchar *bfr = g_malloc0 (16 + (size_t)(size-offset));
+    int fd = open ("./errs", O_RDONLY);
+    lseek (fd, offset, SEEK_SET);
+    read (fd, bfr, (size_t)size);
+    char *p = bfr;
+    for (; *p; p++) if (*p == '\n' || *p == '^') *p = ' ';
+    char *msg = g_strdup_printf ("APL error: %s\n", bfr);
+    gtk_label_set_text (GTK_LABEL (status), msg);
+    while (*--p == ' ') *p = 0;
+    g_free (bfr);
+    g_free (msg);
+    close (fd);
+    offset = size;
   }
-  return NULL;
+  
+  g_signal_handler_unblock (gfm, gsc);
 }
 
 int
 main (int ac, char *av[])
 {
-  FILE*newout = freopen("./errs", "w", stdout);
+  unlink ("./errs");
+  newout = freopen("./errs", "a+", stdout);
   stdout = newout;
 
-  /*  GThread *watch_thread =*/
-    g_thread_new ("watch_thread",
-		  watch_thread_func,
-		  "./errs");
-
+  GFile *gf = g_file_new_for_path ("./errs");
+  gfm = g_file_monitor_file (gf,
+			     G_FILE_MONITOR_NONE, // GFileMonitorFlags flags,
+			     NULL,		// GCancellable *cancellable,
+			     NULL);		// GError **error);
+  g_file_monitor_set_rate_limit (gfm, 200);
+  gsc = g_signal_connect (G_OBJECT(gfm), "changed",
+			  G_CALLBACK (monitor_changed), NULL);
+  
   GOptionEntry entries[] =
     {
 #if 0
@@ -531,7 +509,7 @@ main (int ac, char *av[])
 
   row++;
 
-  status = gtk_statusbar_new ();
+  status = gtk_label_new ("");
   gtk_grid_attach (GTK_GRID (grid), status, 0, row, col, 1);
 
   /************* go button **********/
