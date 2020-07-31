@@ -47,13 +47,13 @@
 #include <apl/libapl.h>
 
 #include "aplvis.h"
+#include "save.h"
 
 #define DEFAULT_WIDTH  480
 #define DEFAULT_HEIGHT 320
 
 static gint             width           = DEFAULT_WIDTH;
 static gint             height          = DEFAULT_HEIGHT;
-static GtkWidget       *window          = NULL;
 static GtkWidget       *da              = NULL;
 static GtkWidget       *status;
 static GFileMonitor    *gfm;
@@ -62,6 +62,8 @@ static char            *newfn;
 static FILE            *newout;
 static int              newfd;
 
+GtkWidget       *window          = NULL;
+GtkWidget       *title;
 GtkWidget       *axis_x_name;
 GtkWidget       *axis_x_label;
 GtkAdjustment   *axis_x_min_adj;
@@ -88,7 +90,7 @@ expression_activate_cb (GtkEntry *entry,
 {
   glong items_read;
   glong items_written;
-  const gchar *expr = gtk_entry_get_text (GTK_ENTRY (entry));
+  const gchar *expr = gtk_entry_get_text (GTK_ENTRY (expression));
   if (!expr || !*expr) return;
 
   const gchar *x_name = gtk_entry_get_text (GTK_ENTRY (axis_x_name));
@@ -317,11 +319,14 @@ build_menu (GtkWidget *vbox)
   gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), menu);
   gtk_menu_shell_append (GTK_MENU_SHELL (menubar), item);
 
-  item = gtk_menu_item_new_with_label (_ ("Export..."));
-#if 0
+  item = gtk_menu_item_new_with_label (_ ("Save..."));
   g_signal_connect (G_OBJECT (item), "activate",
                     G_CALLBACK (save_dialogue), NULL);
-#endif
+  gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+
+  item = gtk_menu_item_new_with_label (_ ("Load..."));
+  g_signal_connect (G_OBJECT (item), "activate",
+                    G_CALLBACK (load_dialogue), NULL);
   gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
   item = gtk_separator_menu_item_new();
@@ -452,13 +457,16 @@ main (int ac, char *av[])
   gtk_grid_set_column_homogeneous (GTK_GRID (grid), FALSE);
 
 
-  gint row = 1;
+  gint row = 0;
   gint col = 0;
 
+  title = gtk_entry_new ();
+  gtk_grid_attach (GTK_GRID (grid), title, col, row, 2, 1);
+  gtk_entry_set_placeholder_text (GTK_ENTRY (title),  _ ("Title"));
 
   /******* x axis ******/
   
-  row += 1;
+  row += 2;
   col = 0;
   
   axis_x_name = gtk_entry_new ();
@@ -535,17 +543,18 @@ main (int ac, char *av[])
   row++;
 
   status = gtk_label_new ("");
-  gtk_grid_attach (GTK_GRID (grid), status, 0, row, col, 1);
+  gtk_grid_attach (GTK_GRID (grid), status, 0, row, col-1, 1);
 
   /************* go button **********/
 
   GtkWidget *go_button = gtk_button_new_with_label (_ ("Go"));
+  gtk_grid_attach (GTK_GRID (grid), go_button, col-1, row, 1, 1);
   g_signal_connect (go_button, "clicked",
                     G_CALLBACK (go_button_cb), NULL);
   
   /***** drawing area ****/
 
-  row = 0;
+  row = 1;
   
   da = gtk_drawing_area_new ();
   gtk_widget_set_size_request (da, width, height);

@@ -4,6 +4,9 @@ bin_PROGRAMS = aplvis
 
 aplvis_SOURCES = aplvis.c aplvis.h \
                  save.c save.h
+
+BUILT_SOURCES = xml-kwds.h
+
 DISTCLEANFILES = .deps/*.P
 
 APL_LIB = -L `apl --show_lib_dir` -lapl
@@ -16,6 +19,10 @@ aplvis_CFLAGS = -std=c99 -Wall -Werror \
 
 aplvis_LDFLAGS = -lm $(GTK_LIBS) $(CAIRO_LIBS) $(MAGICKWAND_LIBS) \
               $(FONTCONFIG_LIBS)  $(PLPLOT_LIBS) $(APL_LIB) -lstdc++
+
+xml-kwds.h : xml-kwds.m4
+	m4 $< >$@
+
 
 # -leak-check=full
 #  algrind --tool=memcheck --leak-check=full --leak-resolution=high -
