@@ -46,14 +46,14 @@ build_settings (FILE *ofile, const gchar*tag, GtkAdjustment *adj)
   gdouble adj_min_step_increment =
     gtk_adjustment_get_step_increment (GTK_ADJUSTMENT (axis_x_max_adj));
   fprintf (ofile, "      <%s %s=\"%s\" %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\"  %s=\"%g\"/>\n",
-	   RANGE,
-	   LIMIT, tag,
-	   VALUE, adj_min_value,
-	   LOWER, adj_min_lower,
-	   UPPER, adj_min_upper,
-	   PAGE_SIZE, adj_min_page_size,
-	   PAGE_INCREMENT, adj_min_page_increment,
-	   STEP_INCREMENT, adj_min_step_increment);
+	   KEYWORD_RANGE,
+	   KEYWORD_LIMIT, tag,
+	   KEYWORD_VALUE, adj_min_value,
+	   KEYWORD_LOWER, adj_min_lower,
+	   KEYWORD_UPPER, adj_min_upper,
+	   KEYWORD_PAGE_SIZE, adj_min_page_size,
+	   KEYWORD_PAGE_INCREMENT, adj_min_page_increment,
+	   KEYWORD_STEP_INCREMENT, adj_min_step_increment);
 }
 
 void
@@ -82,30 +82,43 @@ save_dialogue (GtkWidget *widget, gpointer data)
     if (file) {
       FILE *ofile = fopen (file, "w");
       if (ofile) {
-	fprintf (ofile, "<%s %s=\"%s\">\n", APLVIS, VIS_VERSION, "1.0.0");
+	fprintf (ofile, "<%s %s=\"%s\">\n", KEYWORD_APLVIS,
+		 KEYWORD_VIS_VERSION, "1.0.0");
 	const gchar *titletxt  = gtk_entry_get_text (GTK_ENTRY (title));
-	fprintf (ofile, "  <%1$s>%2$s</%1$s>\n", TITLE, titletxt);
+	fprintf (ofile, "  <%1$s>%2$s</%1$s>\n", KEYWORD_TITLE, titletxt);
 	
-	fprintf (ofile, "  <%s>\n", SETTINGS);
+	fprintf (ofile, "  <%s>\n", KEYWORD_SETTINGS);
 	
 	const gchar *expr = gtk_entry_get_text (GTK_ENTRY (expression));
-	fprintf (ofile, "    <%1$s>%2$s</%1$s>\n", EXPRESSION, expr);
+	fprintf (ofile, "    <%1$s>%2$s</%1$s>\n", KEYWORD_EXPRESSION, expr);
 	
-	fprintf (ofile, "    <%s %s=\"%s\">\n", INDEPENDENT, AXIS, X_AXIS);
+	fprintf (ofile, "    <%s %s=\"%s\">\n", KEYWORD_INDEPENDENT,
+		 KEYWORD_AXIS, KEYWORD_X_AXIS);
 	const gchar *x_name  = gtk_entry_get_text (GTK_ENTRY (axis_x_name));
 	const gchar *x_label = gtk_entry_get_text (GTK_ENTRY (axis_x_label));
-	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", NAME, x_name);
-	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", LABEL, x_label);
-	build_settings (ofile, MINV, axis_x_min_adj);
-	build_settings (ofile, MAXV, axis_x_max_adj);
-	fprintf (ofile, "    </%s>\n", INDEPENDENT);
+	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_NAME, x_name);
+	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_LABEL, x_label);
+	build_settings (ofile, KEYWORD_MINV, axis_x_min_adj);
+	build_settings (ofile, KEYWORD_MAXV, axis_x_max_adj);
+	fprintf (ofile, "    </%s>\n", KEYWORD_INDEPENDENT);
+
+	
+	fprintf (ofile, "    <%s %s=\"%s\">\n", KEYWORD_INDEPENDENT,
+		 KEYWORD_AXIS, KEYWORD_Y_AXIS);
+	const gchar *y_name  = gtk_entry_get_text (GTK_ENTRY (axis_y_name));
+	const gchar *y_label = gtk_entry_get_text (GTK_ENTRY (axis_y_label));
+	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_NAME, y_name);
+	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_LABEL, y_label);
+	build_settings (ofile, KEYWORD_MINV, axis_y_min_adj);
+	build_settings (ofile, KEYWORD_MAXV, axis_y_max_adj);
+	fprintf (ofile, "    </%s>\n", KEYWORD_INDEPENDENT);
 	
     
-	fprintf (ofile, "  </%s>\n", SETTINGS);
+	fprintf (ofile, "  </%s>\n", KEYWORD_SETTINGS);
 
 
 	
-	fprintf (ofile, "</%s\n", APLVIS);
+	fprintf (ofile, "</%s\n", KEYWORD_APLVIS);
 	fflush (ofile);
 	fclose (ofile);
       }
@@ -146,19 +159,19 @@ label_text (GMarkupParseContext *context,
 
 static const GMarkupParser name_parser =
   {
-   NULL,				// start_element      
-   NULL,				// parser.end_element 
+   NULL,			// start_element      
+   NULL,			// parser.end_element 
    name_text,			// text               
-   NULL,				// parser.passthrough 
+   NULL,			// parser.passthrough 
    NULL				// error              
   };
 
 static const GMarkupParser label_parser =
   {
-   NULL,				// start_element      
-   NULL,				// parser.end_element 
+   NULL,			// start_element      
+   NULL,			// parser.end_element 
    label_text,			// text               
-   NULL,				// parser.passthrough 
+   NULL,			// parser.passthrough 
    NULL				// error              
   };
 
@@ -210,19 +223,19 @@ independent_start_element (GMarkupParseContext *context,
 				   attribute_values,
 				   error,
 				   G_MARKUP_COLLECT_STRING,
-				   LIMIT, &limit,
+				   KEYWORD_LIMIT, &limit,
 				   G_MARKUP_COLLECT_STRING,
-				   VALUE, &value,
+				   KEYWORD_VALUE, &value,
 				   G_MARKUP_COLLECT_STRING,
-				   UPPER, &upper,
+				   KEYWORD_UPPER, &upper,
 				   G_MARKUP_COLLECT_STRING,
-				   LOWER, &lower,
+				   KEYWORD_LOWER, &lower,
 				   G_MARKUP_COLLECT_STRING,
-				   PAGE_SIZE, &page_size,
+				   KEYWORD_PAGE_SIZE, &page_size,
 				   G_MARKUP_COLLECT_STRING,
-				   PAGE_INCREMENT, &page_increment,
+				   KEYWORD_PAGE_INCREMENT, &page_increment,
 				   G_MARKUP_COLLECT_STRING,
-				   STEP_INCREMENT, &step_increment,
+				   KEYWORD_STEP_INCREMENT, &step_increment,
 				   G_MARKUP_COLLECT_INVALID);
       fprintf (stderr, "limit = %s\n", limit);
       fprintf (stderr, "value = %s\n", value);
@@ -249,7 +262,6 @@ independent_end_element (GMarkupParseContext *context,
   switch(get_kwd (element_name)) {
   case KWD_NAME:
   case KWD_LABEL:
-    //  case KWD_RANGE:
     g_markup_parse_context_pop (context);
     break;
   default:
@@ -287,7 +299,7 @@ settings_start_element (GMarkupParseContext *context,
 				   attribute_values,
 				   error,
 				   G_MARKUP_COLLECT_STRING,
-				   AXIS, &axis,
+				   KEYWORD_AXIS, &axis,
 				   G_MARKUP_COLLECT_INVALID);
       fprintf (stderr, "axis = %s\n", axis);
       g_markup_parse_context_push (context, &independent_parser, NULL);
@@ -339,9 +351,9 @@ static const GMarkupParser title_parser =
 static const GMarkupParser settings_parser =
   {
    settings_start_element,	// start_element      
-   settings_end_element,		// parser.end_element 
-   NULL,				// text               
-   NULL,				// parser.passthrough 
+   settings_end_element,	// parser.end_element 
+   NULL,			// text               
+   NULL,			// parser.passthrough 
    NULL				// error              
   };
 
@@ -387,10 +399,10 @@ aplvis_end_element (GMarkupParseContext *context,
 static const GMarkupParser aplvis_parser =
   {
    aplvis_start_element,	// start_element
-   aplvis_end_element,	// parser.end_element
+   aplvis_end_element,		// parser.end_element
    NULL,			// text
    NULL,			// parser.passthrough
-   NULL			// error              
+   NULL				// error              
   };
 
 static void
@@ -410,7 +422,7 @@ initial_start_element (GMarkupParseContext *context,
 				   attribute_values,
 				   error,
 				   G_MARKUP_COLLECT_STRING,
-				   VIS_VERSION, &version,
+				   KEYWORD_VIS_VERSION, &version,
 				   G_MARKUP_COLLECT_INVALID);
       fprintf (stderr, "version = %s\n", version);
       g_markup_parse_context_push (context, &aplvis_parser, NULL);

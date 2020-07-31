@@ -6,9 +6,9 @@ define(`offset', 1000)dnl
 define(`cnt',    offset)dnl
 define(`xinc', `define(`$1',incr($1))')dnl
 define(`upcase', `translit($1, `a-z', `A-Z')')dnl
-define(`entry', ``#'define upcase($1) "$1"
+define(`entry', ``#'define `KEYWORD_'upcase($1) "$1"
 `#'define `KWD_'upcase($1) cnt xinc(`cnt')
-divert(1)  `{' upcase($1), `KWD_'upcase($1) `},'
+divert(1)  `{' `KEYWORD_'upcase($1), `KWD_'upcase($1) `},'
 divert(0)'
 )dnl
 
