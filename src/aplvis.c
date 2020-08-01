@@ -385,6 +385,61 @@ monitor_changed (GFileMonitor      *monitor,
   g_signal_handler_unblock (gfm, gsc);
 }
 
+gboolean
+spin_cb (GtkSpinButton *spin_button,
+	 gpointer       user_data)
+{
+  gboolean frc = FALSE;
+  //  -?[number]pi
+#define PATTERN1 "(-?[0-9]*(\\.[0-9]*)?)pi$"
+  //  -?pi/[number]
+#define PATTERN2 "(-?)pi/([0-9]*(\\.[0-9]*)?)$"
+  
+  static GRegex *fmt1 = NULL;
+  static GRegex *fmt2 = NULL;
+
+  if (!fmt1)
+    fmt1 = g_regex_new (PATTERN1,
+			G_REGEX_CASELESS | G_REGEX_EXTENDED | G_REGEX_OPTIMIZE,
+			G_REGEX_MATCH_ANCHORED, NULL);
+  if (!fmt2)
+    fmt2 = g_regex_new (PATTERN2,
+			G_REGEX_CASELESS | G_REGEX_EXTENDED | G_REGEX_OPTIMIZE,
+			G_REGEX_MATCH_ANCHORED, NULL);
+  
+  const gchar *str = gtk_entry_get_text (GTK_ENTRY (spin_button));
+
+  gboolean rc;
+  GMatchInfo *match_info;
+  rc = g_regex_match (fmt1, str, 0, &match_info);
+  gdouble res = NAN;
+  if (rc) {
+    res = G_PI * g_strtod (g_match_info_fetch (match_info, 1), NULL);
+    g_match_info_free (match_info);
+  }
+  else {
+    rc = g_regex_match (fmt2, str, 0, &match_info);
+    if (rc) {
+      gdouble val = g_strtod (g_match_info_fetch (match_info, 2), NULL);
+      if (val != 0.0) {
+	res = G_PI/val;
+	if ('-' == (*g_match_info_fetch (match_info, 1)))
+	  res = -res;
+      }
+      g_match_info_free (match_info);
+    }
+  }
+  if (!isnan (res)) {
+#define RESSTR_SIZE	64
+    gchar resstr[RESSTR_SIZE];
+    g_snprintf (resstr, RESSTR_SIZE, "%g", res);
+    gtk_entry_set_text (GTK_ENTRY (spin_button), resstr);
+    frc = TRUE;
+  }
+  
+  return frc;
+}
+
 static void
 sigint_handler (int sig, siginfo_t *si, void *data)
 {
@@ -482,6 +537,8 @@ main (int ac, char *av[])
 				       0.5,	// gdouble page_increment,
 				       0.5);	// gdouble page_size);
   GtkWidget *axis_x_min = gtk_spin_button_new (indep_x.axis_min_adj, 0.1, 4);
+  g_signal_connect (axis_x_min, "output",
+                    G_CALLBACK (spin_cb), NULL);
   gtk_grid_attach (GTK_GRID (grid), axis_x_min, col++, row, 1, 1);
   indep_x.axis_max_adj = gtk_adjustment_new (1.0, 
 				       -MAXDOUBLE,
