@@ -186,7 +186,7 @@ expression_text (GMarkupParseContext *context,
 		 gpointer             user_data,
 		 GError             **error)
 {
-  fprintf (stderr, "expression = %s\n", text);
+  gtk_entry_set_text (GTK_ENTRY (expression), text);
 }
 
 static const GMarkupParser expression_parser =
@@ -243,13 +243,22 @@ independent_start_element (GMarkupParseContext *context,
 				   G_MARKUP_COLLECT_STRING,
 				   KEYWORD_STEP_INCREMENT, &step_increment,
 				   G_MARKUP_COLLECT_INVALID);
-      fprintf (stderr, "limit = %s\n", limit);
+      
       fprintf (stderr, "value = %s\n", value);
+      GtkAdjustment *adj = (get_kwd (limit) == KWD_MINV) ?
+	indep->axis_min_adj : indep->axis_max_adj;
+      gtk_adjustment_set_value (GTK_ADJUSTMENT (adj),
+				g_strtod (value, NULL));
+#if 0
+      fprintf (stderr, "limit = %s\n", limit);
+      gtk_adjustment_set_lower (GTK_ADJUSTMENT (adj),
+				g_strtod (lower, NULL));
       fprintf (stderr, "lower = %s\n", lower);
       fprintf (stderr, "upper = %s\n", upper);
       fprintf (stderr, "page_size = %s\n", page_size);
       fprintf (stderr, "page_increment = %s\n", page_increment);
       fprintf (stderr, "step_increment = %s\n", step_increment);
+#endif
     }
     break;
   default:
@@ -344,7 +353,7 @@ title_text (GMarkupParseContext *context,
 	    gpointer             user_data,
 	    GError             **error)
 {
-  fprintf (stderr, "title = %s\n", text);
+  gtk_entry_set_text (GTK_ENTRY (title), text);
 }
 
 static const GMarkupParser title_parser =
