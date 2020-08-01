@@ -1,15 +1,17 @@
 #ifndef APLVIS_H
 #define APLVIS_H
 
+typedef struct {
+  GtkWidget       *axis_name;
+  GtkWidget       *axis_label;
+  GtkAdjustment   *axis_min_adj;
+  GtkAdjustment   *axis_max_adj;
+} indep_s;
+
+extern indep_s indep_x;
+extern indep_s indep_y;
+
 extern GtkWidget       *title;
-extern GtkWidget       *axis_x_name;
-extern GtkWidget       *axis_x_label;
-extern GtkAdjustment   *axis_x_min_adj;
-extern GtkAdjustment   *axis_x_max_adj;
-extern GtkWidget       *axis_y_name;
-extern GtkWidget       *axis_y_label;
-extern GtkAdjustment   *axis_y_min_adj;
-extern GtkAdjustment   *axis_y_max_adj;
 extern GtkWidget       *expression;
 extern GtkWidget       *window;
 

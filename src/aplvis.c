@@ -62,16 +62,11 @@ static char            *newfn;
 static FILE            *newout;
 static int              newfd;
 
+indep_s indep_x = {NULL, NULL, NULL, NULL};
+indep_s indep_y = {NULL, NULL, NULL, NULL};
+
 GtkWidget       *window          = NULL;
 GtkWidget       *title;
-GtkWidget       *axis_x_name;
-GtkWidget       *axis_x_label;
-GtkAdjustment   *axis_x_min_adj;
-GtkAdjustment   *axis_x_max_adj;
-GtkWidget       *axis_y_name;
-GtkWidget       *axis_y_label;
-GtkAdjustment   *axis_y_min_adj;
-GtkAdjustment   *axis_y_max_adj;
 GtkWidget       *expression;
 
 #define DEFAULT_GRANULARITY	100
@@ -93,12 +88,12 @@ expression_activate_cb (GtkEntry *entry,
   const gchar *expr = gtk_entry_get_text (GTK_ENTRY (expression));
   if (!expr || !*expr) return;
 
-  const gchar *x_name = gtk_entry_get_text (GTK_ENTRY (axis_x_name));
+  const gchar *x_name = gtk_entry_get_text (GTK_ENTRY (indep_x.axis_name));
   if (x_name && *x_name) {
     gdouble x_adj_min =
-      gtk_adjustment_get_value (GTK_ADJUSTMENT (axis_x_min_adj));
+      gtk_adjustment_get_value (GTK_ADJUSTMENT (indep_x.axis_min_adj));
     gdouble x_adj_max =
-      gtk_adjustment_get_value (GTK_ADJUSTMENT (axis_x_max_adj));
+      gtk_adjustment_get_value (GTK_ADJUSTMENT (indep_x.axis_max_adj));
     if (x_adj_min ==  x_adj_max) {
       // fixme dump status
       return;
@@ -469,30 +464,32 @@ main (int ac, char *av[])
   row += 2;
   col = 0;
   
-  axis_x_name = gtk_entry_new ();
-  gtk_grid_attach (GTK_GRID (grid), axis_x_name, col++, row, 1, 1);
-  gtk_entry_set_max_length (GTK_ENTRY (axis_x_name), 6);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_x_name),  _ ("X Name"));
+  indep_x.axis_name = gtk_entry_new ();
+  gtk_grid_attach (GTK_GRID (grid), indep_x.axis_name, col++, row, 1, 1);
+  gtk_entry_set_max_length (GTK_ENTRY (indep_x.axis_name), 6);
+  gtk_entry_set_placeholder_text (GTK_ENTRY (indep_x.axis_name),
+				  _ ("X Name"));
   
-  axis_x_label = gtk_entry_new ();
-  gtk_entry_set_max_length (GTK_ENTRY (axis_x_label), 16);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_x_label),  _ ("X Label"));
-  gtk_grid_attach (GTK_GRID (grid), axis_x_label, col++, row, 1, 1);
-  axis_x_min_adj = gtk_adjustment_new (-1.0, 
+  indep_x.axis_label = gtk_entry_new ();
+  gtk_entry_set_max_length (GTK_ENTRY (indep_x.axis_label), 16);
+  gtk_entry_set_placeholder_text (GTK_ENTRY (indep_x.axis_label),
+				  _ ("X Label"));
+  gtk_grid_attach (GTK_GRID (grid), indep_x.axis_label, col++, row, 1, 1);
+  indep_x.axis_min_adj = gtk_adjustment_new (-1.0, 
 				       -MAXDOUBLE,
 				       MAXDOUBLE,
 				       0.1,	// gdouble step_increment,
 				       0.5,	// gdouble page_increment,
 				       0.5);	// gdouble page_size);
-  GtkWidget *axis_x_min = gtk_spin_button_new (axis_x_min_adj, 0.1, 4);
+  GtkWidget *axis_x_min = gtk_spin_button_new (indep_x.axis_min_adj, 0.1, 4);
   gtk_grid_attach (GTK_GRID (grid), axis_x_min, col++, row, 1, 1);
-  axis_x_max_adj = gtk_adjustment_new (1.0, 
+  indep_x.axis_max_adj = gtk_adjustment_new (1.0, 
 				       -MAXDOUBLE,
 				       MAXDOUBLE,
 				       0.1,	// gdouble step_increment,
 				       0.5,	// gdouble page_increment,
 				       0.5);	// gdouble page_size);
-  GtkWidget *axis_x_max = gtk_spin_button_new (axis_x_max_adj, 0.1, 4);
+  GtkWidget *axis_x_max = gtk_spin_button_new (indep_x.axis_max_adj, 0.1, 4);
   gtk_grid_attach (GTK_GRID (grid), axis_x_max, col++, row, 1, 1);
 
 
@@ -501,30 +498,32 @@ main (int ac, char *av[])
   row += 1;
   col = 0;
   
-  axis_y_name = gtk_entry_new ();
-  gtk_grid_attach (GTK_GRID (grid), axis_y_name, col++, row, 1, 1);
-  gtk_entry_set_max_length (GTK_ENTRY (axis_y_name), 6);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_y_name),  _ ("Y Name"));
+  indep_y.axis_name = gtk_entry_new ();
+  gtk_grid_attach (GTK_GRID (grid), indep_y.axis_name, col++, row, 1, 1);
+  gtk_entry_set_max_length (GTK_ENTRY (indep_y.axis_name), 6);
+  gtk_entry_set_placeholder_text (GTK_ENTRY (indep_y.axis_name),
+				  _ ("Y Name"));
   
-  axis_y_label = gtk_entry_new ();
-  gtk_entry_set_max_length (GTK_ENTRY (axis_y_label), 16);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (axis_y_label),  _ ("Y Label"));
-  gtk_grid_attach (GTK_GRID (grid), axis_y_label, col++, row, 1, 1);
-  axis_y_min_adj = gtk_adjustment_new (-1.0, 
+  indep_y.axis_label = gtk_entry_new ();
+  gtk_entry_set_max_length (GTK_ENTRY (indep_y.axis_label), 16);
+  gtk_entry_set_placeholder_text (GTK_ENTRY (indep_y.axis_label),
+				  _ ("Y Label"));
+  gtk_grid_attach (GTK_GRID (grid), indep_y.axis_label, col++, row, 1, 1);
+  indep_y.axis_min_adj = gtk_adjustment_new (-1.0, 
 				       -MAXDOUBLE,
 				       MAXDOUBLE,
 				       0.1,	// gdouble step_increment,
 				       0.5,	// gdouble page_increment,
 				       0.5);	// gdouble page_size);
-  GtkWidget *axis_y_min = gtk_spin_button_new (axis_y_min_adj, 0.1, 4);
+  GtkWidget *axis_y_min = gtk_spin_button_new (indep_y.axis_min_adj, 0.1, 4);
   gtk_grid_attach (GTK_GRID (grid), axis_y_min, col++, row, 1, 1);
-  axis_y_max_adj = gtk_adjustment_new (1.0, 
+  indep_y.axis_max_adj = gtk_adjustment_new (1.0, 
 				       -MAXDOUBLE,
 				       MAXDOUBLE,
 				       0.1,	// gdouble step_increment,
 				       0.5,	// gdouble page_increment,
 				       0.5);	// gdouble page_size);
-  GtkWidget *axis_y_max = gtk_spin_button_new (axis_y_max_adj, 0.1, 4);
+  GtkWidget *axis_y_max = gtk_spin_button_new (indep_y.axis_max_adj, 0.1, 4);
   gtk_grid_attach (GTK_GRID (grid), axis_y_max, col++, row, 1, 1);
 
   /******* expression *******/

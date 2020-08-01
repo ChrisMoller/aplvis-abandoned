@@ -36,15 +36,15 @@ build_settings (FILE *ofile, const gchar*tag, GtkAdjustment *adj)
   gdouble adj_min_value =
     gtk_adjustment_get_value (GTK_ADJUSTMENT (adj));
   gdouble adj_min_lower =
-    gtk_adjustment_get_lower (GTK_ADJUSTMENT (axis_x_max_adj));
+    gtk_adjustment_get_lower (GTK_ADJUSTMENT (adj));
   gdouble adj_min_upper =
-    gtk_adjustment_get_upper (GTK_ADJUSTMENT (axis_x_max_adj));
+    gtk_adjustment_get_upper (GTK_ADJUSTMENT (adj));
   gdouble adj_min_page_size =
-    gtk_adjustment_get_page_size (GTK_ADJUSTMENT (axis_x_max_adj));
+    gtk_adjustment_get_page_size (GTK_ADJUSTMENT (adj));
   gdouble adj_min_page_increment =
-    gtk_adjustment_get_page_increment (GTK_ADJUSTMENT (axis_x_max_adj));
+    gtk_adjustment_get_page_increment (GTK_ADJUSTMENT (adj));
   gdouble adj_min_step_increment =
-    gtk_adjustment_get_step_increment (GTK_ADJUSTMENT (axis_x_max_adj));
+    gtk_adjustment_get_step_increment (GTK_ADJUSTMENT (adj));
   fprintf (ofile, "      <%s %s=\"%s\" %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\"  %s=\"%g\"/>\n",
 	   KEYWORD_RANGE,
 	   KEYWORD_LIMIT, tag,
@@ -94,29 +94,31 @@ save_dialogue (GtkWidget *widget, gpointer data)
 	
 	fprintf (ofile, "    <%s %s=\"%s\">\n", KEYWORD_INDEPENDENT,
 		 KEYWORD_AXIS, KEYWORD_X_AXIS);
-	const gchar *x_name  = gtk_entry_get_text (GTK_ENTRY (axis_x_name));
-	const gchar *x_label = gtk_entry_get_text (GTK_ENTRY (axis_x_label));
+	const gchar *x_name  =
+	  gtk_entry_get_text (GTK_ENTRY (indep_x.axis_name));
+	const gchar *x_label =
+	  gtk_entry_get_text (GTK_ENTRY (indep_x.axis_label));
 	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_NAME, x_name);
 	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_LABEL, x_label);
-	build_settings (ofile, KEYWORD_MINV, axis_x_min_adj);
-	build_settings (ofile, KEYWORD_MAXV, axis_x_max_adj);
+	build_settings (ofile, KEYWORD_MINV, indep_x.axis_min_adj);
+	build_settings (ofile, KEYWORD_MAXV, indep_x.axis_max_adj);
 	fprintf (ofile, "    </%s>\n", KEYWORD_INDEPENDENT);
 
 	
 	fprintf (ofile, "    <%s %s=\"%s\">\n", KEYWORD_INDEPENDENT,
 		 KEYWORD_AXIS, KEYWORD_Y_AXIS);
-	const gchar *y_name  = gtk_entry_get_text (GTK_ENTRY (axis_y_name));
-	const gchar *y_label = gtk_entry_get_text (GTK_ENTRY (axis_y_label));
+	const gchar *y_name  =
+	  gtk_entry_get_text (GTK_ENTRY (indep_y.axis_name));
+	const gchar *y_label =
+	  gtk_entry_get_text (GTK_ENTRY (indep_y.axis_label));
 	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_NAME, y_name);
 	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_LABEL, y_label);
-	build_settings (ofile, KEYWORD_MINV, axis_y_min_adj);
-	build_settings (ofile, KEYWORD_MAXV, axis_y_max_adj);
+	build_settings (ofile, KEYWORD_MINV, indep_y.axis_min_adj);
+	build_settings (ofile, KEYWORD_MAXV, indep_y.axis_max_adj);
 	fprintf (ofile, "    </%s>\n", KEYWORD_INDEPENDENT);
 	
     
 	fprintf (ofile, "  </%s>\n", KEYWORD_SETTINGS);
-
-
 	
 	fprintf (ofile, "</%s\n", KEYWORD_APLVIS);
 	fflush (ofile);
@@ -144,7 +146,8 @@ name_text (GMarkupParseContext *context,
 	   gpointer             user_data,
 	   GError             **error)
 {
-  fprintf (stderr, "name = %s\n", text);
+  indep_s *indep = user_data;
+  gtk_entry_set_text (GTK_ENTRY (indep->axis_name), text);
 }
 
 static void
@@ -154,7 +157,8 @@ label_text (GMarkupParseContext *context,
 	    gpointer             user_data,
 	    GError             **error)
 {
-  fprintf (stderr, "label = %s\n", text);
+  indep_s *indep = user_data;
+  gtk_entry_set_text (GTK_ENTRY (indep->axis_label), text);
 }
 
 static const GMarkupParser name_parser =
@@ -202,12 +206,14 @@ independent_start_element (GMarkupParseContext *context,
 			   gpointer             user_data,
 			   GError             **error)
 {
+  indep_s *indep = user_data;
+  
   switch(get_kwd (element_name)) {
   case KWD_NAME:
-    g_markup_parse_context_push (context, &name_parser, NULL);
+    g_markup_parse_context_push (context, &name_parser, indep);
     break;
   case KWD_LABEL:
-    g_markup_parse_context_push (context, &label_parser, NULL);
+    g_markup_parse_context_push (context, &label_parser, indep);
     break;
   case KWD_RANGE:
     {
@@ -302,7 +308,9 @@ settings_start_element (GMarkupParseContext *context,
 				   KEYWORD_AXIS, &axis,
 				   G_MARKUP_COLLECT_INVALID);
       fprintf (stderr, "axis = %s\n", axis);
-      g_markup_parse_context_push (context, &independent_parser, NULL);
+      indep_s *indep =
+	(get_kwd (axis) == KWD_X_AXIS) ? &indep_x : &indep_y;
+      g_markup_parse_context_push (context, &independent_parser, indep);
     }
     break;
   default:
