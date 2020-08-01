@@ -249,16 +249,6 @@ independent_start_element (GMarkupParseContext *context,
 	indep->axis_min_adj : indep->axis_max_adj;
       gtk_adjustment_set_value (GTK_ADJUSTMENT (adj),
 				g_strtod (value, NULL));
-#if 0
-      fprintf (stderr, "limit = %s\n", limit);
-      gtk_adjustment_set_lower (GTK_ADJUSTMENT (adj),
-				g_strtod (lower, NULL));
-      fprintf (stderr, "lower = %s\n", lower);
-      fprintf (stderr, "upper = %s\n", upper);
-      fprintf (stderr, "page_size = %s\n", page_size);
-      fprintf (stderr, "page_increment = %s\n", page_increment);
-      fprintf (stderr, "step_increment = %s\n", step_increment);
-#endif
     }
     break;
   default:
@@ -468,6 +458,52 @@ initial_end_element (GMarkupParseContext *context,
   }
 }
 
+void
+load_file (gchar *file)
+{
+  if (!element_hash) {
+    element_hash = g_hash_table_new (g_str_hash,  g_str_equal);
+    gint i;
+    for (i = 0; i < nr_keys; i++)
+      g_hash_table_insert (element_hash, keywords[i].keyword,
+			   GINT_TO_POINTER (keywords[i].keyvalue));
+  }
+      
+  //      GError *error = NULL;
+  GMarkupParser initial_parser =
+    {
+     initial_start_element,
+     initial_end_element,
+     NULL,
+     NULL,
+     NULL
+    };
+	
+  GMarkupParseContext *initial_context =
+    g_markup_parse_context_new (&initial_parser,
+				G_MARKUP_TREAT_CDATA_AS_TEXT,
+				NULL,
+				NULL);
+  gchar *contents = NULL;
+  gsize length;
+  gboolean rc = g_file_get_contents (file,
+				     &contents,
+				     &length,
+				     NULL);
+  if (rc) {
+    GError *error = NULL;
+    rc = g_markup_parse_context_parse (initial_context,
+				       contents,
+				       length,
+				       &error);
+    if (rc == 0) 
+      fprintf (stderr, "parsing error %s\n", error->message);
+    if (contents) g_free (contents);
+  }
+
+  g_markup_parse_context_end_parse (initial_context,  NULL);
+  g_markup_parse_context_free (initial_context);
+}
 
 
 void
@@ -492,51 +528,7 @@ load_dialogue (GtkWidget *widget, gpointer data)
   
   if (response == GTK_RESPONSE_ACCEPT) {
     gchar *file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-    if (file) {
-
-      if (!element_hash) {
-	element_hash = g_hash_table_new (g_str_hash,  g_str_equal);
-	gint i;
-	for (i = 0; i < nr_keys; i++)
-	  g_hash_table_insert (element_hash, keywords[i].keyword,
-			       GINT_TO_POINTER (keywords[i].keyvalue));
-      }
-      
-      //      GError *error = NULL;
-      GMarkupParser initial_parser =
-	{
-	 initial_start_element,
-	 initial_end_element,
-	 NULL,
-	 NULL,
-	 NULL
-	};
-	
-      GMarkupParseContext *initial_context =
-	g_markup_parse_context_new (&initial_parser,
-				    G_MARKUP_TREAT_CDATA_AS_TEXT,
-				    NULL,
-				    NULL);
-      gchar *contents = NULL;
-      gsize length;
-      gboolean rc = g_file_get_contents (file,
-					 &contents,
-					 &length,
-					 NULL);
-      if (rc) {
-	GError *error = NULL;
-	rc = g_markup_parse_context_parse (initial_context,
-					   contents,
-					   length,
-					   &error);
-	if (rc == 0) 
-	  fprintf (stderr, "parsing error %s\n", error->message);
-	if (contents) g_free (contents);
-      }
-
-      g_markup_parse_context_end_parse (initial_context,  NULL);
-      g_markup_parse_context_free (initial_context);
-    }
+    if (file) load_file (file);
   }
   gtk_widget_destroy (dialog);
 }

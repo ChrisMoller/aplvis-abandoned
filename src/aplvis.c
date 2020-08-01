@@ -621,6 +621,10 @@ main (int ac, char *av[])
   gtk_grid_attach (GTK_GRID (grid), da, 0, row, col, 1);
 
   /******* end grid ******/
+  for (int i = 0; i < ac; i++) {
+    fprintf (stderr, "[%d] %s\n", i, av[i]);
+    load_file (av[i]);
+  }
 
   gtk_widget_show_all (window);
   gtk_main ();
