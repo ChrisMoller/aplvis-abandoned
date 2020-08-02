@@ -590,6 +590,8 @@ main (int ac, char *av[])
   gint col = 0;
 
   title = gtk_entry_new ();
+  g_signal_connect (title, "activate",
+                    G_CALLBACK (expression_activate_cb), NULL);
   gtk_grid_attach (GTK_GRID (grid), title, col, row, 2, 1);
   gtk_entry_set_placeholder_text (GTK_ENTRY (title),  _ ("Title"));
 
