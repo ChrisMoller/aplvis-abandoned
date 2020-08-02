@@ -28,6 +28,7 @@
 #include <glib/gi18n-lib.h>
 
 #include "aplvis.h"
+#include "markup.h"
 
 gchar *x_label = NULL;
 gchar *y_label = NULL;
@@ -40,6 +41,11 @@ gchar *z_label = NULL;
 
 GdkRGBA bg_colour = {DEFAULT_BG_RED, DEFAULT_BG_GREEN,
 		     DEFAULT_BG_BLUE, DEFAULT_BG_ALPHA};
+
+mode_e mode = MODE_2D;
+coords_e coords = COORDS_CARTESIAN;
+gint x_index = -1;
+gint y_index = -1;
 
 void
 markup_dialogue (GtkWidget *widget, gpointer data)
@@ -119,12 +125,12 @@ markup_dialogue (GtkWidget *widget, gpointer data)
   gtk_container_add (GTK_CONTAINER (right_frame), right_vbox);
 
 
-  GtkWidget *left_radio =
+  GtkWidget *mode_2d_radio =
     gtk_radio_button_new_with_label (NULL, _ ("2D"));
-  gtk_box_pack_start (GTK_BOX (left_vbox), GTK_WIDGET (left_radio),
+  gtk_box_pack_start (GTK_BOX (left_vbox), GTK_WIDGET (mode_2d_radio),
 		      FALSE, FALSE, 4);
   // fixme -- save restore
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (left_radio), TRUE);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (mode_2d_radio), TRUE);
 
   /******* left coordinate selection *******/
   
@@ -170,10 +176,10 @@ markup_dialogue (GtkWidget *widget, gpointer data)
 
 
 
-  GtkWidget *right_radio =
-    gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (left_radio),
+  GtkWidget *mode_3d_radio =
+    gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (mode_2d_radio),
 						 _ ("3D"));
-  gtk_box_pack_start (GTK_BOX (right_vbox), GTK_WIDGET (right_radio),
+  gtk_box_pack_start (GTK_BOX (right_vbox), GTK_WIDGET (mode_3d_radio),
 		      FALSE, FALSE, 4);
 
   /******* right coordinate selection *******/
@@ -246,6 +252,32 @@ markup_dialogue (GtkWidget *widget, gpointer data)
     gtk_color_chooser_get_rgba (GTK_COLOR_CHOOSER (colour_chooser),
 				&bg_colour);
     expression_activate_cb (NULL, NULL);
+
+    mode = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (mode_2d_radio))
+      ? MODE_2D : MODE_3D;
+
+    if (mode == MODE_2D) {
+      coords =
+	gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (left_cartesian_radio))
+	? COORDS_CARTESIAN : COORDS_POLAR;
+
+      x_index =
+	gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (left_i_select));
+    }
+    else {
+      if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (right_cartesian_radio))) coords = COORDS_CARTESIAN;
+      
+      else 
+	coords =
+	  gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (right_cylindrical_radio))
+	? COORDS_CYLINDRICAL : COORDS_SPHERICAL;
+
+      x_index =
+	gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (right_xi_select));
+
+      y_index =
+	gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (right_yi_select));
+    }
   }
   gtk_widget_destroy (dialogue);
 }
