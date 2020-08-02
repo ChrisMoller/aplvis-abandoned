@@ -96,10 +96,12 @@ save_dialogue (GtkWidget *widget, gpointer data)
 		 KEYWORD_AXIS, KEYWORD_X_AXIS);
 	const gchar *x_name  =
 	  gtk_entry_get_text (GTK_ENTRY (indep_x.axis_name));
+	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_NAME, x_name);
+#if 0
 	const gchar *x_label =
 	  gtk_entry_get_text (GTK_ENTRY (indep_x.axis_label));
-	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_NAME, x_name);
 	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_LABEL, x_label);
+#endif
 	build_settings (ofile, KEYWORD_MINV, indep_x.axis_min_adj);
 	build_settings (ofile, KEYWORD_MAXV, indep_x.axis_max_adj);
 	fprintf (ofile, "    </%s>\n", KEYWORD_INDEPENDENT);
@@ -109,10 +111,12 @@ save_dialogue (GtkWidget *widget, gpointer data)
 		 KEYWORD_AXIS, KEYWORD_Y_AXIS);
 	const gchar *y_name  =
 	  gtk_entry_get_text (GTK_ENTRY (indep_y.axis_name));
+	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_NAME, y_name);
+#if 0
 	const gchar *y_label =
 	  gtk_entry_get_text (GTK_ENTRY (indep_y.axis_label));
-	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_NAME, y_name);
 	fprintf (ofile, "      <%1$s>%2$s</%1$s>\n", KEYWORD_LABEL, y_label);
+#endif
 	build_settings (ofile, KEYWORD_MINV, indep_y.axis_min_adj);
 	build_settings (ofile, KEYWORD_MAXV, indep_y.axis_max_adj);
 	fprintf (ofile, "    </%s>\n", KEYWORD_INDEPENDENT);
@@ -150,6 +154,16 @@ name_text (GMarkupParseContext *context,
   gtk_entry_set_text (GTK_ENTRY (indep->axis_name), text);
 }
 
+static const GMarkupParser name_parser =
+  {
+   NULL,			// start_element      
+   NULL,			// parser.end_element 
+   name_text,			// text               
+   NULL,			// parser.passthrough 
+   NULL				// error              
+  };
+
+#if 0
 static void
 label_text (GMarkupParseContext *context,
 	    const gchar         *text,
@@ -161,15 +175,6 @@ label_text (GMarkupParseContext *context,
   gtk_entry_set_text (GTK_ENTRY (indep->axis_label), text);
 }
 
-static const GMarkupParser name_parser =
-  {
-   NULL,			// start_element      
-   NULL,			// parser.end_element 
-   name_text,			// text               
-   NULL,			// parser.passthrough 
-   NULL				// error              
-  };
-
 static const GMarkupParser label_parser =
   {
    NULL,			// start_element      
@@ -178,6 +183,7 @@ static const GMarkupParser label_parser =
    NULL,			// parser.passthrough 
    NULL				// error              
   };
+#endif
 
 static void
 expression_text (GMarkupParseContext *context,
@@ -212,9 +218,11 @@ independent_start_element (GMarkupParseContext *context,
   case KWD_NAME:
     g_markup_parse_context_push (context, &name_parser, indep);
     break;
+#if 0
   case KWD_LABEL:
     g_markup_parse_context_push (context, &label_parser, indep);
     break;
+#endif
   case KWD_RANGE:
     {
       gchar *limit = NULL;
@@ -265,7 +273,9 @@ independent_end_element (GMarkupParseContext *context,
 {
   switch(get_kwd (element_name)) {
   case KWD_NAME:
+#if 0
   case KWD_LABEL:
+#endif
     g_markup_parse_context_pop (context);
     break;
   default:

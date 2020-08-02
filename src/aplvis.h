@@ -3,7 +3,9 @@
 
 typedef struct {
   GtkWidget       *axis_name;
+#if 0
   GtkWidget       *axis_label;
+#endif
   GtkAdjustment   *axis_min_adj;
   GtkAdjustment   *axis_max_adj;
 } indep_s;

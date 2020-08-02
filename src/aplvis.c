@@ -62,8 +62,9 @@ static char            *newfn;
 static FILE            *newout;
 static int              newfd;
 
-indep_s indep_x = {NULL, NULL, NULL, NULL};
-indep_s indep_y = {NULL, NULL, NULL, NULL};
+//                                     labrls
+indep_s indep_x = {NULL, NULL, NULL /*, NULL*/};
+indep_s indep_y = {NULL, NULL, NULL /*, NULL*/};
 
 GtkWidget       *window          = NULL;
 GtkWidget       *title;
@@ -540,12 +541,15 @@ main (int ac, char *av[])
   gtk_entry_set_max_length (GTK_ENTRY (indep_x.axis_name), 6);
   gtk_entry_set_placeholder_text (GTK_ENTRY (indep_x.axis_name),
 				  _ ("X Name"));
-  
+
+#if 0
   indep_x.axis_label = gtk_entry_new ();
   gtk_entry_set_max_length (GTK_ENTRY (indep_x.axis_label), 16);
   gtk_entry_set_placeholder_text (GTK_ENTRY (indep_x.axis_label),
 				  _ ("X Label"));
   gtk_grid_attach (GTK_GRID (grid), indep_x.axis_label, col++, row, 1, 1);
+#endif
+  
   indep_x.axis_min_adj = gtk_adjustment_new (-1.0, 
 				       -MAXDOUBLE,
 				       MAXDOUBLE,
@@ -579,11 +583,14 @@ main (int ac, char *av[])
   gtk_entry_set_placeholder_text (GTK_ENTRY (indep_y.axis_name),
 				  _ ("Y Name"));
   
+#if 0
   indep_y.axis_label = gtk_entry_new ();
   gtk_entry_set_max_length (GTK_ENTRY (indep_y.axis_label), 16);
   gtk_entry_set_placeholder_text (GTK_ENTRY (indep_y.axis_label),
 				  _ ("Y Label"));
   gtk_grid_attach (GTK_GRID (grid), indep_y.axis_label, col++, row, 1, 1);
+#endif
+  
   indep_y.axis_min_adj = gtk_adjustment_new (-1.0, 
 				       -MAXDOUBLE,
 				       MAXDOUBLE,
