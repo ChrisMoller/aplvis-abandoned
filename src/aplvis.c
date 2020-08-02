@@ -273,7 +273,7 @@ da_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
 
     /* set bg */
     cairo_rectangle (cr, 0.0, 0.0, (PLFLT)width, (PLFLT)height);
-    cairo_set_source_rgba (cr, 1.0, 0.5, 0.7, 1.0);
+    cairo_set_source_rgba (cr, 0.3, 0.5, 0.7, 1.0);
     cairo_fill (cr);
     
     if (xvec) {
@@ -390,15 +390,19 @@ spin_cb (GtkSpinButton *spin_button,
 	 gpointer       user_data)
 {
   gboolean frc = FALSE;
-  //  -?[number]pi
+#define PATTERN0 "-?pi$"
 #define PATTERN1 "(-?[0-9]*(\\.[0-9]*)?)pi$"
-  //  -?pi/[number]
 #define PATTERN2 "(-?)pi/([0-9]*(\\.[0-9]*)?)$"
   
+  static GRegex *fmt0 = NULL;
   static GRegex *fmt1 = NULL;
   static GRegex *fmt2 = NULL;
 
-  if (!fmt1)
+  if (!fmt0) 
+    fmt0 = g_regex_new (PATTERN0,
+			G_REGEX_CASELESS | G_REGEX_EXTENDED | G_REGEX_OPTIMIZE,
+			G_REGEX_MATCH_ANCHORED, NULL);
+  if (!fmt1) 
     fmt1 = g_regex_new (PATTERN1,
 			G_REGEX_CASELESS | G_REGEX_EXTENDED | G_REGEX_OPTIMIZE,
 			G_REGEX_MATCH_ANCHORED, NULL);
@@ -411,13 +415,18 @@ spin_cb (GtkSpinButton *spin_button,
 
   gboolean rc;
   GMatchInfo *match_info;
-  rc = g_regex_match (fmt1, str, 0, &match_info);
   gdouble res = NAN;
-  if (rc) {
-    res = G_PI * g_strtod (g_match_info_fetch (match_info, 1), NULL);
-    g_match_info_free (match_info);
+
+  rc = g_regex_match (fmt0, str, 0, &match_info);
+  if (rc) res = ('-' == *g_match_info_fetch (match_info, 0 )) ? -G_PI : G_PI;
+  if (isnan (res)) {
+    rc = g_regex_match (fmt1, str, 0, &match_info);
+    if (rc) {
+      res = G_PI * g_strtod (g_match_info_fetch (match_info, 1), NULL);
+      g_match_info_free (match_info);
+    }
   }
-  else {
+  if (isnan (res)) {
     rc = g_regex_match (fmt2, str, 0, &match_info);
     if (rc) {
       gdouble val = g_strtod (g_match_info_fetch (match_info, 2), NULL);
@@ -547,6 +556,8 @@ main (int ac, char *av[])
 				       0.5,	// gdouble page_increment,
 				       0.5);	// gdouble page_size);
   GtkWidget *axis_x_max = gtk_spin_button_new (indep_x.axis_max_adj, 0.1, 4);
+  g_signal_connect (axis_x_max, "output",
+                    G_CALLBACK (spin_cb), NULL);
   gtk_grid_attach (GTK_GRID (grid), axis_x_max, col++, row, 1, 1);
 
 
@@ -573,6 +584,8 @@ main (int ac, char *av[])
 				       0.5,	// gdouble page_increment,
 				       0.5);	// gdouble page_size);
   GtkWidget *axis_y_min = gtk_spin_button_new (indep_y.axis_min_adj, 0.1, 4);
+  g_signal_connect (axis_y_min, "output",
+                    G_CALLBACK (spin_cb), NULL);
   gtk_grid_attach (GTK_GRID (grid), axis_y_min, col++, row, 1, 1);
   indep_y.axis_max_adj = gtk_adjustment_new (1.0, 
 				       -MAXDOUBLE,
@@ -581,6 +594,8 @@ main (int ac, char *av[])
 				       0.5,	// gdouble page_increment,
 				       0.5);	// gdouble page_size);
   GtkWidget *axis_y_max = gtk_spin_button_new (indep_y.axis_max_adj, 0.1, 4);
+  g_signal_connect (axis_y_max, "output",
+                    G_CALLBACK (spin_cb), NULL);
   gtk_grid_attach (GTK_GRID (grid), axis_y_max, col++, row, 1, 1);
 
   /******* expression *******/
@@ -621,9 +636,10 @@ main (int ac, char *av[])
   gtk_grid_attach (GTK_GRID (grid), da, 0, row, col, 1);
 
   /******* end grid ******/
-  for (int i = 0; i < ac; i++) {
-    fprintf (stderr, "[%d] %s\n", i, av[i]);
-    load_file (av[i]);
+
+  if (ac > 0) {
+    load_file (av[1]);
+    expression_activate_cb (NULL, NULL);
   }
 
   gtk_widget_show_all (window);

@@ -244,7 +244,6 @@ independent_start_element (GMarkupParseContext *context,
 				   KEYWORD_STEP_INCREMENT, &step_increment,
 				   G_MARKUP_COLLECT_INVALID);
       
-      fprintf (stderr, "value = %s\n", value);
       GtkAdjustment *adj = (get_kwd (limit) == KWD_MINV) ?
 	indep->axis_min_adj : indep->axis_max_adj;
       gtk_adjustment_set_value (GTK_ADJUSTMENT (adj),
@@ -306,7 +305,6 @@ settings_start_element (GMarkupParseContext *context,
 				   G_MARKUP_COLLECT_STRING,
 				   KEYWORD_AXIS, &axis,
 				   G_MARKUP_COLLECT_INVALID);
-      fprintf (stderr, "axis = %s\n", axis);
       indep_s *indep =
 	(get_kwd (axis) == KWD_X_AXIS) ? &indep_x : &indep_y;
       g_markup_parse_context_push (context, &independent_parser, indep);
@@ -431,7 +429,6 @@ initial_start_element (GMarkupParseContext *context,
 				   G_MARKUP_COLLECT_STRING,
 				   KEYWORD_VIS_VERSION, &version,
 				   G_MARKUP_COLLECT_INVALID);
-      fprintf (stderr, "version = %s\n", version);
       g_markup_parse_context_push (context, &aplvis_parser, NULL);
     }
     break;
@@ -497,7 +494,7 @@ load_file (gchar *file)
 				       length,
 				       &error);
     if (rc == 0) 
-      fprintf (stderr, "parsing error %s\n", error->message);
+      fprintf (stderr, "parsing error %s\n", error->message);  // fixme
     if (contents) g_free (contents);
   }
 
