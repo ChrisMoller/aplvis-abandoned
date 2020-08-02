@@ -20,5 +20,7 @@ extern GtkWidget       *expression;
 extern GtkWidget       *window;
 extern gboolean         loading;
 
+void expression_activate_cb (GtkEntry *entry, gpointer  user_data);
+
 
 #endif  // APLVIS_H

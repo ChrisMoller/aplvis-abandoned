@@ -48,6 +48,7 @@
 
 #include "aplvis.h"
 #include "save.h"
+#include "markup.h"
 
 #define DEFAULT_WIDTH  480
 #define DEFAULT_HEIGHT 320
@@ -134,7 +135,7 @@ set_indep (indep_s *indep)
   }
 }
 
-static void
+void
 expression_activate_cb (GtkEntry *entry,
 			gpointer  user_data)
 {
@@ -294,12 +295,16 @@ da_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
 
     /* set bg */
     cairo_rectangle (cr, 0.0, 0.0, (PLFLT)width, (PLFLT)height);
-    cairo_set_source_rgba (cr, 0.3, 0.5, 0.7, 1.0);
+    cairo_set_source_rgba (cr,
+			   bg_colour.red,
+			   bg_colour.green,
+			   bg_colour.blue,
+			   bg_colour.alpha);
     cairo_fill (cr);
     
     if (xvec) {
       plenv (xmin, xmax, ymin, ymax, 0, 0);
-      pllab ("X", "Y", "Title");
+      pllab (x_label, y_label, gtk_entry_get_text (GTK_ENTRY (title)));
       plssym (0.0, 0.75);
       plcol0 (3);
       plline (count, xvec, yvec);
@@ -360,11 +365,9 @@ build_menu (GtkWidget *vbox)
   gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), menu);
   gtk_menu_shell_append (GTK_MENU_SHELL (menubar), item);
 
-  item = gtk_menu_item_new_with_label (_ ("Environment"));
-#if 0
+  item = gtk_menu_item_new_with_label (_ ("Markup"));
   g_signal_connect (G_OBJECT (item), "activate",
-                    G_CALLBACK (preferences), NULL);
-#endif
+                    G_CALLBACK (markup_dialogue), NULL);
   gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
 
@@ -478,22 +481,14 @@ spin_output_cb (GtkSpinButton *spin_button,
 }
 
 static void
-create_limit_spin (GtkWidget *grid, indep_s *indep, gint *row, gint *col)
+create_limit_spin (GtkWidget *grid, indep_s *indep,
+		   gint *row, gint *col, const gchar *name)
 {
   indep->axis_name = gtk_entry_new ();
   gtk_grid_attach (GTK_GRID (grid), indep->axis_name, (*col)++, *row, 1, 1);
   gtk_entry_set_max_length (GTK_ENTRY (indep->axis_name), 6);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (indep->axis_name),
-				  _ ("X Name"));
+  gtk_entry_set_placeholder_text (GTK_ENTRY (indep->axis_name), name);
 
-#if 0
-  indep_x.axis_label = gtk_entry_new ();
-  gtk_entry_set_max_length (GTK_ENTRY (indep_x.axis_label), 16);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (indep_x.axis_label),
-				  _ ("X Label"));
-  gtk_grid_attach (GTK_GRID (grid), indep_x.axis_label, col++, row, 1, 1);
-#endif
-  
   indep->axis_min_adj =
     gtk_adjustment_new (-1.0, 
 			-MAXDOUBLE,
@@ -616,10 +611,10 @@ main (int ac, char *av[])
   row += 2;
   col = 0;
 
-  create_limit_spin (grid, &indep_x, &row, &col);
+  create_limit_spin (grid, &indep_x, &row, &col, _ ("X Name"));
   row += 1;
   col = 0;
-  create_limit_spin (grid, &indep_y, &row, &col);
+  create_limit_spin (grid, &indep_y, &row, &col, _ ("Y Name"));
   row += 1;
 
   /******* expression *******/

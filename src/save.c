@@ -62,22 +62,22 @@ save_dialogue (GtkWidget *widget, gpointer data)
   GtkFileFilter *filter = gtk_file_filter_new ();
   gtk_file_filter_set_name (GTK_FILE_FILTER (filter), _ ("APL Vis files"));
   gtk_file_filter_add_pattern (filter, "*.vis");
-  GtkWidget *dialog =
+  GtkWidget *dialogue =
     gtk_file_chooser_dialog_new (_ ("Save vis file"),
                                  GTK_WINDOW (window),
                                  GTK_FILE_CHOOSER_ACTION_SAVE,
                                  "_OK", GTK_RESPONSE_ACCEPT,
                                  "_Cancel", GTK_RESPONSE_CANCEL,
                                  NULL);
-  gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
-  gtk_dialog_set_default_response (GTK_DIALOG (dialog),
+  gtk_window_set_position (GTK_WINDOW (dialogue), GTK_WIN_POS_MOUSE);
+  gtk_dialog_set_default_response (GTK_DIALOG (dialogue),
                                    GTK_RESPONSE_ACCEPT);
-  gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
-  gtk_widget_show_all (dialog);
-  gint response = gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialogue), filter);
+  gtk_widget_show_all (dialogue);
+  gint response = gtk_dialog_run (GTK_DIALOG (dialogue));
   
   if (response == GTK_RESPONSE_ACCEPT) {
-    gchar *file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+    gchar *file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialogue));
     
     if (file) {
       FILE *ofile = fopen (file, "w");
@@ -131,7 +131,7 @@ save_dialogue (GtkWidget *widget, gpointer data)
       g_free (file);
     }
   }
-  gtk_widget_destroy (dialog);
+  gtk_widget_destroy (dialogue);
 }
 
 static GHashTable *element_hash = NULL;
@@ -512,6 +512,7 @@ load_file (gchar *file)
   g_markup_parse_context_end_parse (initial_context,  NULL);
   g_markup_parse_context_free (initial_context);
   loading = FALSE;
+  expression_activate_cb (NULL, NULL);
 }
 
 
@@ -521,23 +522,23 @@ load_dialogue (GtkWidget *widget, gpointer data)
   GtkFileFilter *filter = gtk_file_filter_new ();
   gtk_file_filter_set_name (GTK_FILE_FILTER (filter), _ ("APL Vis files"));
   gtk_file_filter_add_pattern (filter, "*.vis");
-  GtkWidget *dialog =
+  GtkWidget *dialogue =
     gtk_file_chooser_dialog_new (_ ("Load vis file"),
                                  GTK_WINDOW (window),
                                  GTK_FILE_CHOOSER_ACTION_OPEN,
                                  "_OK", GTK_RESPONSE_ACCEPT,
                                  "_Cancel", GTK_RESPONSE_CANCEL,
                                  NULL);
-  gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
-  gtk_dialog_set_default_response (GTK_DIALOG (dialog),
+  gtk_window_set_position (GTK_WINDOW (dialogue), GTK_WIN_POS_MOUSE);
+  gtk_dialog_set_default_response (GTK_DIALOG (dialogue),
                                    GTK_RESPONSE_ACCEPT);
-  gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
-  gtk_widget_show_all (dialog);
-  gint response = gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialogue), filter);
+  gtk_widget_show_all (dialogue);
+  gint response = gtk_dialog_run (GTK_DIALOG (dialogue));
   
   if (response == GTK_RESPONSE_ACCEPT) {
-    gchar *file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+    gchar *file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialogue));
     if (file) load_file (file);
   }
-  gtk_widget_destroy (dialog);
+  gtk_widget_destroy (dialogue);
 }

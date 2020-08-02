@@ -3,7 +3,8 @@ bin_PROGRAMS = aplvis
 #AM_LFLAGS = -o$(LEX_OUTPUT_ROOT).c
 
 aplvis_SOURCES = aplvis.c aplvis.h \
-                 save.c save.h
+                 save.c save.h \
+                 markup.c markup.h
 
 BUILT_SOURCES = xml-kwds.h
 
