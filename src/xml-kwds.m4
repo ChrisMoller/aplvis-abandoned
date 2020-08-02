@@ -43,6 +43,9 @@ entry(bg_red)
 entry(bg_green)
 entry(bg_blue)
 entry(bg_alpha)
+entry(x_label)
+entry(y_label)
+entry(z_label)
 
 
 `typedef struct {

@@ -1,7 +1,18 @@
-save x, y, z labels on exit
-
 auto update on setting main title
 
-add labelling
+add arbitrary labelling
 
 add parameter sliders
+
+add auto-granularity w/ target run length (10 pixels?)
+
+add format selects:  
+	2d
+		index-y
+		x-y,  select mtx row to use as x
+		cartesian, polar
+		for cpx, real, imag, mag, pha
+	3d
+		index_x, index_y - z
+		x,y - z select row, row to use as x, y
+		cartesian/polar x,y

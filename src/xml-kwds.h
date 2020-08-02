@@ -106,6 +106,18 @@
 #define KWD_BG_ALPHA 1024 
 
 
+#define KEYWORD_X_LABEL "x_label"
+#define KWD_X_LABEL 1025 
+
+
+#define KEYWORD_Y_LABEL "y_label"
+#define KWD_Y_LABEL 1026 
+
+
+#define KEYWORD_Z_LABEL "z_label"
+#define KWD_Z_LABEL 1027 
+
+
 
 
 typedef struct {
@@ -139,7 +151,10 @@ keyword_s keywords[] = {
   { KEYWORD_BG_GREEN, KWD_BG_GREEN },
   { KEYWORD_BG_BLUE, KWD_BG_BLUE },
   { KEYWORD_BG_ALPHA, KWD_BG_ALPHA },
+  { KEYWORD_X_LABEL, KWD_X_LABEL },
+  { KEYWORD_Y_LABEL, KWD_Y_LABEL },
+  { KEYWORD_Z_LABEL, KWD_Z_LABEL },
 
 };
-gint nr_keys = 25;
+gint nr_keys = 28;
 #endif /* XML_KWDS_H*/

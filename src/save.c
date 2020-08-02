@@ -87,6 +87,9 @@ save_dialogue (GtkWidget *widget, gpointer data)
 		 KEYWORD_VIS_VERSION, "1.0.0");
 	const gchar *titletxt  = gtk_entry_get_text (GTK_ENTRY (title));
 	fprintf (ofile, "  <%1$s>%2$s</%1$s>\n", KEYWORD_TITLE, titletxt);
+	fprintf (ofile, "  <%1$s>%2$s</%1$s>\n", KEYWORD_X_LABEL, x_label);
+	fprintf (ofile, "  <%1$s>%2$s</%1$s>\n", KEYWORD_Y_LABEL, y_label);
+	fprintf (ofile, "  <%1$s>%2$s</%1$s>\n", KEYWORD_Z_LABEL, z_label);
 	
 	fprintf (ofile, "  <%s %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\">\n",
 		 KEYWORD_SETTINGS,
@@ -369,6 +372,66 @@ static const GMarkupParser title_parser =
    NULL				// error              
   };
 
+static void
+x_label_text (GMarkupParseContext *context,
+	      const gchar         *text,
+	      gsize                text_len,
+	      gpointer             user_data,
+	      GError             **error)
+{
+  if (x_label) g_free (x_label);
+  x_label = g_strdup (text);
+}
+
+static const GMarkupParser x_label_parser =
+  {
+   NULL,			// start_element      
+   NULL,			// parser.end_element 
+   x_label_text,		// text               
+   NULL,			// parser.passthrough 
+   NULL				// error              
+  };
+
+static void
+y_label_text (GMarkupParseContext *context,
+	      const gchar         *text,
+	      gsize                text_len,
+	      gpointer             user_data,
+	      GError             **error)
+{
+  if (y_label) g_free (y_label);
+  y_label = g_strdup (text);
+}
+
+static const GMarkupParser y_label_parser =
+  {
+   NULL,			// start_element      
+   NULL,			// parser.end_element 
+   y_label_text,		// text               
+   NULL,			// parser.passthrough 
+   NULL				// error              
+  };
+
+static void
+z_label_text (GMarkupParseContext *context,
+	      const gchar         *text,
+	      gsize                text_len,
+	      gpointer             user_data,
+	      GError             **error)
+{
+  if (z_label) g_free (z_label);
+  z_label = g_strdup (text);
+}
+
+static const GMarkupParser z_label_parser =
+  {
+   NULL,			// start_element      
+   NULL,			// parser.end_element 
+   z_label_text,		// text               
+   NULL,			// parser.passthrough 
+   NULL				// error              
+  };
+
 static const GMarkupParser settings_parser =
   {
    settings_start_element,	// start_element      
@@ -389,6 +452,15 @@ aplvis_start_element (GMarkupParseContext *context,
   switch(get_kwd (element_name)) {
   case KWD_TITLE:
     g_markup_parse_context_push (context, &title_parser, NULL);
+    break;
+  case KWD_X_LABEL:
+    g_markup_parse_context_push (context, &x_label_parser, NULL);
+    break;
+  case KWD_Y_LABEL:
+    g_markup_parse_context_push (context, &y_label_parser, NULL);
+    break;
+  case KWD_Z_LABEL:
+    g_markup_parse_context_push (context, &z_label_parser, NULL);
     break;
   case KWD_SETTINGS:
     {
@@ -432,6 +504,9 @@ aplvis_end_element (GMarkupParseContext *context,
   switch(get_kwd (element_name)) {
   case KWD_SETTINGS:
   case KWD_TITLE:
+  case KWD_X_LABEL:
+  case KWD_Y_LABEL:
+  case KWD_Z_LABEL:
     g_markup_parse_context_pop (context);
     break;
   default:
