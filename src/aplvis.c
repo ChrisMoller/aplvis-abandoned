@@ -80,20 +80,16 @@ uint64_t count = 0;
 #define expvar "expvar⍙"
 
 static void
-expression_activate_cb (GtkEntry *entry,
-			gpointer  user_data)
+set_indep (indep_s *indep)
 {
   glong items_read;
   glong items_written;
-  const gchar *expr = gtk_entry_get_text (GTK_ENTRY (expression));
-  if (!expr || !*expr) return;
-
-  const gchar *x_name = gtk_entry_get_text (GTK_ENTRY (indep_x.axis_name));
+  const gchar *x_name = gtk_entry_get_text (GTK_ENTRY (indep->axis_name));
   if (x_name && *x_name) {
     gdouble x_adj_min =
-      gtk_adjustment_get_value (GTK_ADJUSTMENT (indep_x.axis_min_adj));
+      gtk_adjustment_get_value (GTK_ADJUSTMENT (indep->axis_min_adj));
     gdouble x_adj_max =
-      gtk_adjustment_get_value (GTK_ADJUSTMENT (indep_x.axis_max_adj));
+      gtk_adjustment_get_value (GTK_ADJUSTMENT (indep->axis_max_adj));
     if (x_adj_min ==  x_adj_max) {
       // fixme dump status
       return;
@@ -124,9 +120,20 @@ expression_activate_cb (GtkEntry *entry,
     apl_exec_ucs (x_incr_ucs);
     g_free (x_incr_ucs);
   }
-  
+}
+
+static void
+expression_activate_cb (GtkEntry *entry,
+			gpointer  user_data)
+{
+  const gchar *expr = gtk_entry_get_text (GTK_ENTRY (expression));
+  if (!expr || !*expr) return;
+  set_indep (&indep_x);
+  set_indep (&indep_y);
   char *cmd = g_strdup_printf ("%s←%s", expvar, expr);
 
+  glong items_read;
+  glong items_written;
   gunichar *cmd_ucs = g_utf8_to_ucs4 (cmd,
 				      (glong)strlen (cmd),
 				      &items_read,
