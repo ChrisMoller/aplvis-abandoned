@@ -13,7 +13,9 @@ typedef struct {
 extern indep_s indep_x;
 extern indep_s indep_y;
 
+extern GtkAdjustment   *gran_adj;
 extern GtkWidget       *title;
+extern GtkWidget       *gran_spin;
 extern GtkWidget       *expression;
 extern GtkWidget       *window;
 

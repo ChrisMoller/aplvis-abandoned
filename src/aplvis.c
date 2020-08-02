@@ -65,12 +65,14 @@ static int              newfd;
 //                                     labels
 indep_s indep_x = {NULL, NULL, NULL /*, NULL*/};
 indep_s indep_y = {NULL, NULL, NULL /*, NULL*/};
+GtkAdjustment *gran_adj = NULL;
+GtkWidget *gran_spin = NULL;
 
 GtkWidget       *window          = NULL;
 GtkWidget       *title;
 GtkWidget       *expression;
 
-#define DEFAULT_GRANULARITY	100
+#define DEFAULT_GRANULARITY	60
 gint granularity = DEFAULT_GRANULARITY;
 PLFLT *xvec= NULL;
 PLFLT *yvec= NULL;
@@ -95,6 +97,12 @@ set_indep (indep_s *indep)
       // fixme dump status
       return;
     }
+
+    //fixme temporary
+
+    granularity =
+      gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (gran_spin));
+    
     gdouble k_incr = (x_adj_max - x_adj_min) / (double)granularity;
     /***
 	1..4 ==> i 2 3 4 ==> 1 + 0 1 2 3 ==> 1 + ⍳(4 - 1)
@@ -524,12 +532,25 @@ main (int ac, char *av[])
   gtk_grid_set_column_homogeneous (GTK_GRID (grid), FALSE);
 
 
+  /************* title *************/
+
   gint row = 0;
   gint col = 0;
 
   title = gtk_entry_new ();
   gtk_grid_attach (GTK_GRID (grid), title, col, row, 2, 1);
   gtk_entry_set_placeholder_text (GTK_ENTRY (title),  _ ("Title"));
+
+  col += 2;
+  
+  gran_adj = gtk_adjustment_new (100.0, 
+				 -10.0,
+				 1024,
+				 1.0,	// gdouble step_increment,
+				 5.0,	// gdouble page_increment,
+				 10.0);	// gdouble page_size);
+  gran_spin = gtk_spin_button_new (gran_adj, 1, 4);
+  gtk_grid_attach (GTK_GRID (grid), gran_spin, col++, row, 1, 1);
 
   /******* x axis ******/
   
