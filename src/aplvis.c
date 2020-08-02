@@ -62,7 +62,7 @@ static char            *newfn;
 static FILE            *newout;
 static int              newfd;
 
-//                                     labrls
+//                                     labels
 indep_s indep_x = {NULL, NULL, NULL /*, NULL*/};
 indep_s indep_y = {NULL, NULL, NULL /*, NULL*/};
 
