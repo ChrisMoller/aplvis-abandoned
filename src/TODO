@@ -2,4 +2,6 @@ save x, y, z labels on exit
 
 auto update on setting main title
 
-save/load bg colours to colour chooser
+add labelling
+
+add parameter sliders

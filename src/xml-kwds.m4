@@ -39,6 +39,10 @@ entry(upper)
 entry(page_size)
 entry(page_increment)
 entry(step_increment)
+entry(bg_red)
+entry(bg_green)
+entry(bg_blue)
+entry(bg_alpha)
 
 
 `typedef struct {

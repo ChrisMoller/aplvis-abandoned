@@ -96,8 +96,8 @@ markup_dialogue (GtkWidget *widget, gpointer data)
   gtk_grid_attach (GTK_GRID (grid), z_lbl_entry, col++, row, 1, 1);
   gtk_entry_set_placeholder_text (GTK_ENTRY (z_lbl_entry),  _ ("Z Label"));
 
-  GtkWidget *colour_chooser =
-    gtk_color_chooser_widget_new ();
+  GtkWidget *colour_chooser = gtk_color_chooser_widget_new ();
+  gtk_color_chooser_set_rgba (GTK_COLOR_CHOOSER (colour_chooser), &bg_colour);
   gtk_box_pack_start (GTK_BOX (hbox), GTK_WIDGET (colour_chooser),
 		      TRUE, TRUE, 8);
 

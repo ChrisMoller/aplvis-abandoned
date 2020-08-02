@@ -90,6 +90,22 @@
 #define KWD_STEP_INCREMENT 1020 
 
 
+#define KEYWORD_BG_RED "bg_red"
+#define KWD_BG_RED 1021 
+
+
+#define KEYWORD_BG_GREEN "bg_green"
+#define KWD_BG_GREEN 1022 
+
+
+#define KEYWORD_BG_BLUE "bg_blue"
+#define KWD_BG_BLUE 1023 
+
+
+#define KEYWORD_BG_ALPHA "bg_alpha"
+#define KWD_BG_ALPHA 1024 
+
+
 
 
 typedef struct {
@@ -119,7 +135,11 @@ keyword_s keywords[] = {
   { KEYWORD_PAGE_SIZE, KWD_PAGE_SIZE },
   { KEYWORD_PAGE_INCREMENT, KWD_PAGE_INCREMENT },
   { KEYWORD_STEP_INCREMENT, KWD_STEP_INCREMENT },
+  { KEYWORD_BG_RED, KWD_BG_RED },
+  { KEYWORD_BG_GREEN, KWD_BG_GREEN },
+  { KEYWORD_BG_BLUE, KWD_BG_BLUE },
+  { KEYWORD_BG_ALPHA, KWD_BG_ALPHA },
 
 };
-gint nr_keys = 21;
+gint nr_keys = 25;
 #endif /* XML_KWDS_H*/

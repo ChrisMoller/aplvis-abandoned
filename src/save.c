@@ -28,6 +28,7 @@
 #include <glib/gi18n-lib.h>
 
 #include "aplvis.h"
+#include "markup.h"
 #include "xml-kwds.h"
 
 static void
@@ -87,7 +88,12 @@ save_dialogue (GtkWidget *widget, gpointer data)
 	const gchar *titletxt  = gtk_entry_get_text (GTK_ENTRY (title));
 	fprintf (ofile, "  <%1$s>%2$s</%1$s>\n", KEYWORD_TITLE, titletxt);
 	
-	fprintf (ofile, "  <%s>\n", KEYWORD_SETTINGS);
+	fprintf (ofile, "  <%s %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\">\n",
+		 KEYWORD_SETTINGS,
+		 KEYWORD_BG_RED,   bg_colour.red,
+		 KEYWORD_BG_GREEN, bg_colour.green,
+		 KEYWORD_BG_BLUE,  bg_colour.blue,
+		 KEYWORD_BG_ALPHA, bg_colour.alpha);
 	
 	const gchar *expr = gtk_entry_get_text (GTK_ENTRY (expression));
 	fprintf (ofile, "    <%1$s>%2$s</%1$s>\n", KEYWORD_EXPRESSION, expr);
@@ -385,7 +391,30 @@ aplvis_start_element (GMarkupParseContext *context,
     g_markup_parse_context_push (context, &title_parser, NULL);
     break;
   case KWD_SETTINGS:
-    g_markup_parse_context_push (context, &settings_parser, NULL);
+    {
+      gchar *bg_red_str = NULL;
+      gchar *bg_green_str = NULL;
+      gchar *bg_blue_str = NULL;
+      gchar *bg_alpha_str = NULL;
+      g_markup_collect_attributes (element_name,
+				   attribute_names,
+				   attribute_values,
+				   error,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_BG_RED, &bg_red_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_BG_GREEN, &bg_green_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_BG_BLUE, &bg_blue_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_BG_ALPHA, &bg_alpha_str,
+				   G_MARKUP_COLLECT_INVALID);
+      bg_colour.red   = g_strtod (bg_red_str, NULL);
+      bg_colour.green = g_strtod (bg_green_str, NULL);
+      bg_colour.blue  = g_strtod (bg_blue_str, NULL);
+      bg_colour.alpha = g_strtod (bg_alpha_str, NULL);
+      g_markup_parse_context_push (context, &settings_parser, NULL);
+    }
     break;
   default:
     // fixme -- bad xml
