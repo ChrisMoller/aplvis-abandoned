@@ -18,6 +18,7 @@ extern GtkWidget       *title;
 extern GtkWidget       *gran_spin;
 extern GtkWidget       *expression;
 extern GtkWidget       *window;
+extern gboolean         loading;
 
 
 #endif  // APLVIS_H

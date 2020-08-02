@@ -468,6 +468,7 @@ initial_end_element (GMarkupParseContext *context,
 void
 load_file (gchar *file)
 {
+  loading = TRUE;
   if (!element_hash) {
     element_hash = g_hash_table_new (g_str_hash,  g_str_equal);
     gint i;
@@ -510,6 +511,7 @@ load_file (gchar *file)
 
   g_markup_parse_context_end_parse (initial_context,  NULL);
   g_markup_parse_context_free (initial_context);
+  loading = FALSE;
 }
 
 

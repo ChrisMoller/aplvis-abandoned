@@ -61,6 +61,9 @@ static gulong           gsc;
 static char            *newfn;
 static FILE            *newout;
 static int              newfd;
+static gboolean		menu_ready = FALSE;
+
+gboolean		loading = FALSE;
 
 //                                     labels
 indep_s indep_x = {NULL, NULL, NULL /*, NULL*/};
@@ -135,6 +138,7 @@ static void
 expression_activate_cb (GtkEntry *entry,
 			gpointer  user_data)
 {
+  if (!menu_ready || loading) return;
   const gchar *expr = gtk_entry_get_text (GTK_ENTRY (expression));
   if (!expr || !*expr) return;
   set_indep (&indep_x);
@@ -159,6 +163,7 @@ expression_activate_cb (GtkEntry *entry,
     //			_ ("Null return from expression evaluation"));
     return;
   }
+  gtk_label_set_text (GTK_LABEL (status), "");
   count = get_element_count (expval);
   int i;
   for (i = 0; i < count; i++) {
@@ -401,8 +406,15 @@ monitor_changed (GFileMonitor      *monitor,
   g_signal_handler_unblock (gfm, gsc);
 }
 
-gboolean
-spin_cb (GtkSpinButton *spin_button,
+static void
+spin_changed_cb (GtkSpinButton *spin_button,
+		 gpointer       user_data)
+{
+  expression_activate_cb (NULL, NULL);
+}
+
+static gboolean
+spin_output_cb (GtkSpinButton *spin_button,
 	 gpointer       user_data)
 {
   gboolean frc = FALSE;
@@ -463,6 +475,51 @@ spin_cb (GtkSpinButton *spin_button,
   }
   
   return frc;
+}
+
+static void
+create_limit_spin (GtkWidget *grid, indep_s *indep, gint *row, gint *col)
+{
+  indep->axis_name = gtk_entry_new ();
+  gtk_grid_attach (GTK_GRID (grid), indep->axis_name, (*col)++, *row, 1, 1);
+  gtk_entry_set_max_length (GTK_ENTRY (indep->axis_name), 6);
+  gtk_entry_set_placeholder_text (GTK_ENTRY (indep->axis_name),
+				  _ ("X Name"));
+
+#if 0
+  indep_x.axis_label = gtk_entry_new ();
+  gtk_entry_set_max_length (GTK_ENTRY (indep_x.axis_label), 16);
+  gtk_entry_set_placeholder_text (GTK_ENTRY (indep_x.axis_label),
+				  _ ("X Label"));
+  gtk_grid_attach (GTK_GRID (grid), indep_x.axis_label, col++, row, 1, 1);
+#endif
+  
+  indep->axis_min_adj =
+    gtk_adjustment_new (-1.0, 
+			-MAXDOUBLE,
+			MAXDOUBLE,
+			0.1,		// gdouble step_increment,
+			0.5,		// gdouble page_increment,
+			0.5);		// gdouble page_size);
+  GtkWidget *axis_x_min = gtk_spin_button_new (indep->axis_min_adj, 0.1, 4);
+  g_signal_connect (axis_x_min, "output",
+                    G_CALLBACK (spin_output_cb), NULL);
+  g_signal_connect (axis_x_min, "value-changed",
+                    G_CALLBACK (spin_changed_cb), NULL);
+  gtk_grid_attach (GTK_GRID (grid), axis_x_min, (*col)++, *row, 1, 1);
+  indep->axis_max_adj =
+    gtk_adjustment_new (1.0, 
+			-MAXDOUBLE,
+			MAXDOUBLE,
+			0.1,		// gdouble step_increment,
+			0.5,		// gdouble page_increment,
+			0.5);		// gdouble page_size);
+  GtkWidget *axis_x_max = gtk_spin_button_new (indep->axis_max_adj, 0.1, 4);
+  g_signal_connect (axis_x_max, "output",
+                    G_CALLBACK (spin_output_cb), NULL);
+  g_signal_connect (axis_x_max, "value-changed",
+                    G_CALLBACK (spin_changed_cb), NULL);
+  gtk_grid_attach (GTK_GRID (grid), axis_x_max, (*col)++, *row, 1, 1);
 }
 
 static void
@@ -543,99 +600,30 @@ main (int ac, char *av[])
 
   col += 2;
   
-  gran_adj = gtk_adjustment_new (100.0, 
+  gran_adj = gtk_adjustment_new ((gdouble)granularity, 
 				 -10.0,
 				 1024,
 				 1.0,	// gdouble step_increment,
 				 5.0,	// gdouble page_increment,
 				 10.0);	// gdouble page_size);
   gran_spin = gtk_spin_button_new (gran_adj, 1, 4);
+  g_signal_connect (gran_spin, "value-changed",
+                    G_CALLBACK (spin_changed_cb), NULL);
   gtk_grid_attach (GTK_GRID (grid), gran_spin, col++, row, 1, 1);
 
   /******* x axis ******/
   
   row += 2;
   col = 0;
-  
-  indep_x.axis_name = gtk_entry_new ();
-  gtk_grid_attach (GTK_GRID (grid), indep_x.axis_name, col++, row, 1, 1);
-  gtk_entry_set_max_length (GTK_ENTRY (indep_x.axis_name), 6);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (indep_x.axis_name),
-				  _ ("X Name"));
 
-#if 0
-  indep_x.axis_label = gtk_entry_new ();
-  gtk_entry_set_max_length (GTK_ENTRY (indep_x.axis_label), 16);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (indep_x.axis_label),
-				  _ ("X Label"));
-  gtk_grid_attach (GTK_GRID (grid), indep_x.axis_label, col++, row, 1, 1);
-#endif
-  
-  indep_x.axis_min_adj = gtk_adjustment_new (-1.0, 
-				       -MAXDOUBLE,
-				       MAXDOUBLE,
-				       0.1,	// gdouble step_increment,
-				       0.5,	// gdouble page_increment,
-				       0.5);	// gdouble page_size);
-  GtkWidget *axis_x_min = gtk_spin_button_new (indep_x.axis_min_adj, 0.1, 4);
-  g_signal_connect (axis_x_min, "output",
-                    G_CALLBACK (spin_cb), NULL);
-  gtk_grid_attach (GTK_GRID (grid), axis_x_min, col++, row, 1, 1);
-  indep_x.axis_max_adj = gtk_adjustment_new (1.0, 
-				       -MAXDOUBLE,
-				       MAXDOUBLE,
-				       0.1,	// gdouble step_increment,
-				       0.5,	// gdouble page_increment,
-				       0.5);	// gdouble page_size);
-  GtkWidget *axis_x_max = gtk_spin_button_new (indep_x.axis_max_adj, 0.1, 4);
-  g_signal_connect (axis_x_max, "output",
-                    G_CALLBACK (spin_cb), NULL);
-  gtk_grid_attach (GTK_GRID (grid), axis_x_max, col++, row, 1, 1);
-
-
-  /******* y axis ******/
-  
+  create_limit_spin (grid, &indep_x, &row, &col);
   row += 1;
   col = 0;
-  
-  indep_y.axis_name = gtk_entry_new ();
-  gtk_grid_attach (GTK_GRID (grid), indep_y.axis_name, col++, row, 1, 1);
-  gtk_entry_set_max_length (GTK_ENTRY (indep_y.axis_name), 6);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (indep_y.axis_name),
-				  _ ("Y Name"));
-  
-#if 0
-  indep_y.axis_label = gtk_entry_new ();
-  gtk_entry_set_max_length (GTK_ENTRY (indep_y.axis_label), 16);
-  gtk_entry_set_placeholder_text (GTK_ENTRY (indep_y.axis_label),
-				  _ ("Y Label"));
-  gtk_grid_attach (GTK_GRID (grid), indep_y.axis_label, col++, row, 1, 1);
-#endif
-  
-  indep_y.axis_min_adj = gtk_adjustment_new (-1.0, 
-				       -MAXDOUBLE,
-				       MAXDOUBLE,
-				       0.1,	// gdouble step_increment,
-				       0.5,	// gdouble page_increment,
-				       0.5);	// gdouble page_size);
-  GtkWidget *axis_y_min = gtk_spin_button_new (indep_y.axis_min_adj, 0.1, 4);
-  g_signal_connect (axis_y_min, "output",
-                    G_CALLBACK (spin_cb), NULL);
-  gtk_grid_attach (GTK_GRID (grid), axis_y_min, col++, row, 1, 1);
-  indep_y.axis_max_adj = gtk_adjustment_new (1.0, 
-				       -MAXDOUBLE,
-				       MAXDOUBLE,
-				       0.1,	// gdouble step_increment,
-				       0.5,	// gdouble page_increment,
-				       0.5);	// gdouble page_size);
-  GtkWidget *axis_y_max = gtk_spin_button_new (indep_y.axis_max_adj, 0.1, 4);
-  g_signal_connect (axis_y_max, "output",
-                    G_CALLBACK (spin_cb), NULL);
-  gtk_grid_attach (GTK_GRID (grid), axis_y_max, col++, row, 1, 1);
+  create_limit_spin (grid, &indep_y, &row, &col);
+  row += 1;
 
   /******* expression *******/
 
-  row += 1;
 
   expression = gtk_entry_new ();
   g_signal_connect (expression, "activate",
@@ -672,7 +660,9 @@ main (int ac, char *av[])
 
   /******* end grid ******/
 
-  if (ac > 0) {
+  menu_ready = TRUE;
+
+  if (ac > 1) {
     load_file (av[1]);
     expression_activate_cb (NULL, NULL);
   }
