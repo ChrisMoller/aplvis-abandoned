@@ -14,3 +14,6 @@ add format selects:
 		index_x, index_y - z
 		x,y - z select row, row to use as x, y
 		cartesian/polar x,y
+
+
+2d/3d radio save restore

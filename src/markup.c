@@ -56,13 +56,13 @@ markup_dialogue (GtkWidget *widget, gpointer data)
                                    GTK_RESPONSE_ACCEPT);
 
   GtkWidget *outer_vbox = gtk_dialog_get_content_area (GTK_DIALOG (dialogue));
-  GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 8);
-  gtk_box_pack_start (GTK_BOX (outer_vbox), GTK_WIDGET (hbox), TRUE, TRUE, 8);
+  GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 4);
+  gtk_box_pack_start (GTK_BOX (outer_vbox), GTK_WIDGET (hbox), TRUE, TRUE, 4);
 
   GtkWidget *grid = gtk_grid_new ();
-  gtk_box_pack_start (GTK_BOX (hbox), GTK_WIDGET (grid), TRUE, TRUE, 8);
-  gtk_grid_set_row_spacing (GTK_GRID (grid), 8);
-  gtk_grid_set_column_spacing (GTK_GRID (grid), 8);
+  gtk_box_pack_start (GTK_BOX (hbox), GTK_WIDGET (grid), TRUE, TRUE, 4);
+  gtk_grid_set_row_spacing (GTK_GRID (grid), 4);
+  gtk_grid_set_column_spacing (GTK_GRID (grid), 4);
   gtk_grid_set_row_homogeneous (GTK_GRID (grid), FALSE);
   gtk_grid_set_column_homogeneous (GTK_GRID (grid), FALSE);
 
@@ -99,9 +99,137 @@ markup_dialogue (GtkWidget *widget, gpointer data)
   GtkWidget *colour_chooser = gtk_color_chooser_widget_new ();
   gtk_color_chooser_set_rgba (GTK_COLOR_CHOOSER (colour_chooser), &bg_colour);
   gtk_box_pack_start (GTK_BOX (hbox), GTK_WIDGET (colour_chooser),
-		      TRUE, TRUE, 8);
+		      TRUE, TRUE, 4);
+  
+  GtkWidget *separator = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
+  gtk_box_pack_start (GTK_BOX (outer_vbox), GTK_WIDGET (separator),
+		      FALSE, FALSE, 8);
+ 
+  GtkWidget *two_panes = gtk_paned_new (GTK_ORIENTATION_HORIZONTAL);
+  gtk_box_pack_start (GTK_BOX (outer_vbox), GTK_WIDGET (two_panes),
+		      TRUE, TRUE, 4);
+  GtkWidget *left_frame = gtk_frame_new (_ ("2D Operations"));
+  GtkWidget *right_frame = gtk_frame_new (_ ("3D Operations"));
+  gtk_paned_pack1 (GTK_PANED (two_panes), left_frame, TRUE, TRUE);
+  gtk_paned_pack2 (GTK_PANED (two_panes), right_frame, TRUE, TRUE);
+  
+  GtkWidget *left_vbox  = gtk_box_new (GTK_ORIENTATION_VERTICAL, 4);
+  GtkWidget *right_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 4);
+  gtk_container_add (GTK_CONTAINER (left_frame), left_vbox);
+  gtk_container_add (GTK_CONTAINER (right_frame), right_vbox);
 
 
+  GtkWidget *left_radio =
+    gtk_radio_button_new_with_label (NULL, _ ("2D"));
+  gtk_box_pack_start (GTK_BOX (left_vbox), GTK_WIDGET (left_radio),
+		      FALSE, FALSE, 4);
+  // fixme -- save restore
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (left_radio), TRUE);
+
+  /******* left coordinate selection *******/
+  
+  GtkWidget *left_coord_frame = gtk_frame_new (_ ("2D Coordinate Systems"));
+  gtk_box_pack_start (GTK_BOX (left_vbox), GTK_WIDGET (left_coord_frame),
+		      FALSE, FALSE, 4);
+  GtkWidget *left_coord_hbox  = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 4);
+  gtk_container_add (GTK_CONTAINER (left_coord_frame),
+		     left_coord_hbox);
+  GtkWidget *left_cartesian_radio =
+    gtk_radio_button_new_with_label (NULL, _ ("Cartesian"));
+  gtk_box_pack_start (GTK_BOX (left_coord_hbox),
+		      GTK_WIDGET (left_cartesian_radio), TRUE, TRUE, 4);
+  // fixme -- save restore
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (left_cartesian_radio),
+				TRUE);
+  GtkWidget *left_polar_radio =
+    gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (left_cartesian_radio), _ ("Polar"));
+  gtk_box_pack_start (GTK_BOX (left_coord_hbox),
+		      GTK_WIDGET (left_polar_radio), TRUE, TRUE, 4);
+  
+  /******* end left coordinate selection *******/
+
+  /******* left index selection *******/
+
+  GtkWidget *left_grid = gtk_grid_new ();
+  gtk_box_pack_start (GTK_BOX (left_vbox), GTK_WIDGET (left_grid),
+		      TRUE, TRUE, 4);
+  gtk_grid_set_row_spacing (GTK_GRID (left_grid), 4);
+  gtk_grid_set_column_spacing (GTK_GRID (left_grid), 4);
+  gtk_grid_set_row_homogeneous (GTK_GRID (left_grid), FALSE);
+  gtk_grid_set_column_homogeneous (GTK_GRID (left_grid), FALSE);
+
+  GtkWidget *left_i_label = gtk_label_new (_ ("Index select*"));
+  gtk_widget_set_tooltip_text (left_i_label,
+			       _ ("Given a rank-2 matrix, sets which row is to be used as the x, or independent, axis while all other rows will be used as one or more y, or dependent, curves.  A value of -1 makes all the rows dependent, using a zero-based index for the independent axis."));
+  gtk_grid_attach (GTK_GRID (left_grid), left_i_label, 0, 0, 1, 1);
+  GtkWidget *left_i_select =
+    gtk_spin_button_new_with_range (-1.0, 10000.0, 1.0);
+  gtk_grid_attach (GTK_GRID (left_grid), left_i_select, 1, 0, 1, 1);
+  
+  /******* end left index selection *******/
+
+
+
+  GtkWidget *right_radio =
+    gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (left_radio),
+						 _ ("3D"));
+  gtk_box_pack_start (GTK_BOX (right_vbox), GTK_WIDGET (right_radio),
+		      FALSE, FALSE, 4);
+
+  /******* right coordinate selection *******/
+  
+  GtkWidget *right_coord_frame = gtk_frame_new (_ ("3D Coordinate Systems"));
+  gtk_box_pack_start (GTK_BOX (right_vbox), GTK_WIDGET (right_coord_frame),
+		      FALSE, FALSE, 4);
+  GtkWidget *right_coord_hbox  = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 4);
+  gtk_container_add (GTK_CONTAINER (right_coord_frame),
+		     right_coord_hbox);
+  GtkWidget *right_cartesian_radio =
+    gtk_radio_button_new_with_label (NULL, _ ("Cartesian"));
+  gtk_box_pack_start (GTK_BOX (right_coord_hbox),
+		      GTK_WIDGET (right_cartesian_radio), TRUE, TRUE, 4);
+  // fixme -- save restore
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (right_cartesian_radio),
+				TRUE);
+  GtkWidget *right_cylindrical_radio =
+    gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (right_cartesian_radio), _ ("Cylindrical"));
+  gtk_box_pack_start (GTK_BOX (right_coord_hbox),
+		      GTK_WIDGET (right_cylindrical_radio), TRUE, TRUE, 4);
+  GtkWidget *right_spherical_radio =
+    gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (right_cartesian_radio), _ ("Spherical"));
+  gtk_box_pack_start (GTK_BOX (right_coord_hbox),
+		      GTK_WIDGET (right_spherical_radio), TRUE, TRUE, 4);
+  
+  /******* end right coordinate selection *******/
+  
+  /******* right index selection *******/
+
+  GtkWidget *right_grid = gtk_grid_new ();
+  gtk_box_pack_start (GTK_BOX (right_vbox), GTK_WIDGET (right_grid),
+		      TRUE, TRUE, 4);
+  gtk_grid_set_row_spacing (GTK_GRID (right_grid), 4);
+  gtk_grid_set_column_spacing (GTK_GRID (right_grid), 4);
+  gtk_grid_set_row_homogeneous (GTK_GRID (right_grid), FALSE);
+  gtk_grid_set_column_homogeneous (GTK_GRID (right_grid), FALSE);
+
+  GtkWidget *right_xi_label = gtk_label_new (_ ("X index select*"));
+  gtk_widget_set_tooltip_text (right_xi_label,
+			       _ ("Given a rank-2 matrix, sets which rows are to be used as the x and, or independent, axes while all other rows will be used as one or more z, or values, curves.  A value of -1 means that axis will use a zero-based index instead a computed value."));
+  gtk_grid_attach (GTK_GRID (right_grid), right_xi_label, 0, 0, 1, 1);
+  GtkWidget *right_xi_select =
+    gtk_spin_button_new_with_range (-1.0, 10000.0, 1.0);
+  gtk_grid_attach (GTK_GRID (right_grid), right_xi_select, 1, 0, 1, 1);
+  
+  GtkWidget *right_yi_label = gtk_label_new (_ ("Y index select"));
+  gtk_grid_attach (GTK_GRID (right_grid), right_yi_label, 0, 1, 1, 1);
+  GtkWidget *right_yi_select =
+    gtk_spin_button_new_with_range (-1.0, 10000.0, 1.0);
+  gtk_grid_attach (GTK_GRID (right_grid), right_yi_select, 1, 1, 1, 1);
+
+  /******* end index selection *******/
+  
+
+  
   gtk_widget_show_all (dialogue);
   gint response = gtk_dialog_run (GTK_DIALOG (dialogue));
   
