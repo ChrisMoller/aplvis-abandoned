@@ -118,6 +118,46 @@
 #define KWD_Z_LABEL 1027 
 
 
+#define KEYWORD_MODE "mode"
+#define KWD_MODE 1028 
+
+
+#define KEYWORD_COORDS "coords"
+#define KWD_COORDS 1029 
+
+
+#define KEYWORD_X_INDEX "x_index"
+#define KWD_X_INDEX 1030 
+
+
+#define KEYWORD_Y_INDEX "y_index"
+#define KWD_Y_INDEX 1031 
+
+
+#define KEYWORD_CARTESIAN "cartesian"
+#define KWD_CARTESIAN 1032 
+
+
+#define KEYWORD_POLAR "polar"
+#define KWD_POLAR 1033 
+
+
+#define KEYWORD_CYLINDRICAL "cylindrical"
+#define KWD_CYLINDRICAL 1034 
+
+
+#define KEYWORD_SPHERICAL "spherical"
+#define KWD_SPHERICAL 1035 
+
+
+#define KEYWORD_2D "2d"
+#define KWD_2D 1036 
+
+
+#define KEYWORD_3D "3d"
+#define KWD_3D 1037 
+
+
 
 
 typedef struct {
@@ -154,7 +194,17 @@ keyword_s keywords[] = {
   { KEYWORD_X_LABEL, KWD_X_LABEL },
   { KEYWORD_Y_LABEL, KWD_Y_LABEL },
   { KEYWORD_Z_LABEL, KWD_Z_LABEL },
+  { KEYWORD_MODE, KWD_MODE },
+  { KEYWORD_COORDS, KWD_COORDS },
+  { KEYWORD_X_INDEX, KWD_X_INDEX },
+  { KEYWORD_Y_INDEX, KWD_Y_INDEX },
+  { KEYWORD_CARTESIAN, KWD_CARTESIAN },
+  { KEYWORD_POLAR, KWD_POLAR },
+  { KEYWORD_CYLINDRICAL, KWD_CYLINDRICAL },
+  { KEYWORD_SPHERICAL, KWD_SPHERICAL },
+  { KEYWORD_2D, KWD_2D },
+  { KEYWORD_3D, KWD_3D },
 
 };
-gint nr_keys = 28;
+gint nr_keys = 38;
 #endif /* XML_KWDS_H*/

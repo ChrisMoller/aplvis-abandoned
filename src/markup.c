@@ -129,8 +129,8 @@ markup_dialogue (GtkWidget *widget, gpointer data)
     gtk_radio_button_new_with_label (NULL, _ ("2D"));
   gtk_box_pack_start (GTK_BOX (left_vbox), GTK_WIDGET (mode_2d_radio),
 		      FALSE, FALSE, 4);
-  // fixme -- save restore
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (mode_2d_radio), TRUE);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (mode_2d_radio),
+				mode == MODE_2D);
 
   /******* left coordinate selection *******/
   
@@ -144,13 +144,14 @@ markup_dialogue (GtkWidget *widget, gpointer data)
     gtk_radio_button_new_with_label (NULL, _ ("Cartesian"));
   gtk_box_pack_start (GTK_BOX (left_coord_hbox),
 		      GTK_WIDGET (left_cartesian_radio), TRUE, TRUE, 4);
-  // fixme -- save restore
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (left_cartesian_radio),
-				TRUE);
+				coords == COORDS_CARTESIAN);
   GtkWidget *left_polar_radio =
     gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (left_cartesian_radio), _ ("Polar"));
   gtk_box_pack_start (GTK_BOX (left_coord_hbox),
 		      GTK_WIDGET (left_polar_radio), TRUE, TRUE, 4);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (left_polar_radio),
+				coords == COORDS_POLAR);
   
   /******* end left coordinate selection *******/
 
@@ -177,8 +178,9 @@ markup_dialogue (GtkWidget *widget, gpointer data)
 
 
   GtkWidget *mode_3d_radio =
-    gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (mode_2d_radio),
-						 _ ("3D"));
+    gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (mode_2d_radio), _ ("3D"));
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (mode_3d_radio),
+				mode == MODE_3D);
   gtk_box_pack_start (GTK_BOX (right_vbox), GTK_WIDGET (mode_3d_radio),
 		      FALSE, FALSE, 4);
 
@@ -194,17 +196,20 @@ markup_dialogue (GtkWidget *widget, gpointer data)
     gtk_radio_button_new_with_label (NULL, _ ("Cartesian"));
   gtk_box_pack_start (GTK_BOX (right_coord_hbox),
 		      GTK_WIDGET (right_cartesian_radio), TRUE, TRUE, 4);
-  // fixme -- save restore
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (right_cartesian_radio),
-				TRUE);
+				coords == COORDS_CARTESIAN);
   GtkWidget *right_cylindrical_radio =
     gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (right_cartesian_radio), _ ("Cylindrical"));
   gtk_box_pack_start (GTK_BOX (right_coord_hbox),
 		      GTK_WIDGET (right_cylindrical_radio), TRUE, TRUE, 4);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (right_cylindrical_radio),
+				coords == COORDS_CYLINDRICAL);
   GtkWidget *right_spherical_radio =
     gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (right_cartesian_radio), _ ("Spherical"));
   gtk_box_pack_start (GTK_BOX (right_coord_hbox),
 		      GTK_WIDGET (right_spherical_radio), TRUE, TRUE, 4);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (right_spherical_radio),
+				coords == COORDS_SPHERICAL);
   
   /******* end right coordinate selection *******/
   

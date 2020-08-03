@@ -90,13 +90,23 @@ save_dialogue (GtkWidget *widget, gpointer data)
 	fprintf (ofile, "  <%1$s>%2$s</%1$s>\n", KEYWORD_X_LABEL, x_label);
 	fprintf (ofile, "  <%1$s>%2$s</%1$s>\n", KEYWORD_Y_LABEL, y_label);
 	fprintf (ofile, "  <%1$s>%2$s</%1$s>\n", KEYWORD_Z_LABEL, z_label);
+	gchar *mode_str = (mode == MODE_2D) ? KEYWORD_2D : KEYWORD_3D;
+	gchar *coord_str = "";
+	switch(coords) {
+	case COORDS_CARTESIAN:	coord_str = KEYWORD_CARTESIAN; break;
+	case COORDS_POLAR:	coord_str = KEYWORD_POLAR; break;
+	case COORDS_CYLINDRICAL:coord_str = KEYWORD_CYLINDRICAL; break;
+	case COORDS_SPHERICAL:	coord_str = KEYWORD_SPHERICAL; break;
+	}
 	
-	fprintf (ofile, "  <%s %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\">\n",
+	fprintf (ofile, "  <%s %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%s\" %s=\"%s\">\n",
 		 KEYWORD_SETTINGS,
 		 KEYWORD_BG_RED,   bg_colour.red,
 		 KEYWORD_BG_GREEN, bg_colour.green,
 		 KEYWORD_BG_BLUE,  bg_colour.blue,
-		 KEYWORD_BG_ALPHA, bg_colour.alpha);
+		 KEYWORD_BG_ALPHA, bg_colour.alpha,
+		 KEYWORD_MODE,	   mode_str,
+		 KEYWORD_COORDS,   coord_str);
 	
 	const gchar *expr = gtk_entry_get_text (GTK_ENTRY (expression));
 	fprintf (ofile, "    <%1$s>%2$s</%1$s>\n", KEYWORD_EXPRESSION, expr);
@@ -468,6 +478,8 @@ aplvis_start_element (GMarkupParseContext *context,
       gchar *bg_green_str = NULL;
       gchar *bg_blue_str = NULL;
       gchar *bg_alpha_str = NULL;
+      gchar *mode_str = NULL;
+      gchar *coords_str = NULL;
       g_markup_collect_attributes (element_name,
 				   attribute_names,
 				   attribute_values,
@@ -480,11 +492,24 @@ aplvis_start_element (GMarkupParseContext *context,
 				   KEYWORD_BG_BLUE, &bg_blue_str,
 				   G_MARKUP_COLLECT_STRING,
 				   KEYWORD_BG_ALPHA, &bg_alpha_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_COORDS, &coords_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_MODE, &mode_str,
 				   G_MARKUP_COLLECT_INVALID);
       bg_colour.red   = g_strtod (bg_red_str, NULL);
       bg_colour.green = g_strtod (bg_green_str, NULL);
       bg_colour.blue  = g_strtod (bg_blue_str, NULL);
       bg_colour.alpha = g_strtod (bg_alpha_str, NULL);
+      gint kwd = get_kwd (mode_str);
+      mode = (kwd == KWD_2D) ? MODE_2D : MODE_3D;
+      kwd = get_kwd (coords_str);
+      switch(kwd) {
+      case KWD_CARTESIAN:	coords = COORDS_CARTESIAN;	break;
+      case KWD_POLAR:		coords = COORDS_POLAR;		break;
+      case KWD_CYLINDRICAL: 	coords = COORDS_CYLINDRICAL;	break;
+      case KWD_SPHERICAL: 	coords = COORDS_SPHERICAL;	break;
+      }
       g_markup_parse_context_push (context, &settings_parser, NULL);
     }
     break;

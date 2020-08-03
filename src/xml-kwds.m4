@@ -46,6 +46,16 @@ entry(bg_alpha)
 entry(x_label)
 entry(y_label)
 entry(z_label)
+entry(mode)
+entry(coords)
+entry(x_index)
+entry(y_index)
+entry(cartesian)
+entry(polar)
+entry(cylindrical)
+entry(spherical)
+entry(2d)
+entry(3d)
 
 
 `typedef struct {
