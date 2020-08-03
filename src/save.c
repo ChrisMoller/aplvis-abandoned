@@ -99,14 +99,16 @@ save_dialogue (GtkWidget *widget, gpointer data)
 	case COORDS_SPHERICAL:	coord_str = KEYWORD_SPHERICAL; break;
 	}
 	
-	fprintf (ofile, "  <%s %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%s\" %s=\"%s\">\n",
+	fprintf (ofile, "  <%s %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%s\" %s=\"%s\" %s=\"%d\" %s=\"%d\">\n",
 		 KEYWORD_SETTINGS,
 		 KEYWORD_BG_RED,   bg_colour.red,
 		 KEYWORD_BG_GREEN, bg_colour.green,
 		 KEYWORD_BG_BLUE,  bg_colour.blue,
 		 KEYWORD_BG_ALPHA, bg_colour.alpha,
 		 KEYWORD_MODE,	   mode_str,
-		 KEYWORD_COORDS,   coord_str);
+		 KEYWORD_COORDS,   coord_str,
+		 KEYWORD_X_INDEX,  x_index,
+		 KEYWORD_Y_INDEX,  y_index);
 	
 	const gchar *expr = gtk_entry_get_text (GTK_ENTRY (expression));
 	fprintf (ofile, "    <%1$s>%2$s</%1$s>\n", KEYWORD_EXPRESSION, expr);
@@ -480,6 +482,8 @@ aplvis_start_element (GMarkupParseContext *context,
       gchar *bg_alpha_str = NULL;
       gchar *mode_str = NULL;
       gchar *coords_str = NULL;
+      gchar *x_idx_str = NULL;
+      gchar *y_idx_str = NULL;
       g_markup_collect_attributes (element_name,
 				   attribute_names,
 				   attribute_values,
@@ -496,11 +500,17 @@ aplvis_start_element (GMarkupParseContext *context,
 				   KEYWORD_COORDS, &coords_str,
 				   G_MARKUP_COLLECT_STRING,
 				   KEYWORD_MODE, &mode_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_X_INDEX, &x_idx_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_Y_INDEX, &y_idx_str,
 				   G_MARKUP_COLLECT_INVALID);
       bg_colour.red   = g_strtod (bg_red_str, NULL);
       bg_colour.green = g_strtod (bg_green_str, NULL);
       bg_colour.blue  = g_strtod (bg_blue_str, NULL);
       bg_colour.alpha = g_strtod (bg_alpha_str, NULL);
+      x_index = atoi (x_idx_str);
+      y_index = atoi (y_idx_str);
       gint kwd = get_kwd (mode_str);
       mode = (kwd == KWD_2D) ? MODE_2D : MODE_3D;
       kwd = get_kwd (coords_str);

@@ -171,6 +171,8 @@ markup_dialogue (GtkWidget *widget, gpointer data)
   gtk_grid_attach (GTK_GRID (left_grid), left_i_label, 0, 0, 1, 1);
   GtkWidget *left_i_select =
     gtk_spin_button_new_with_range (-1.0, 10000.0, 1.0);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (left_i_select),
+			     (gdouble)x_index);
   gtk_grid_attach (GTK_GRID (left_grid), left_i_select, 1, 0, 1, 1);
   
   /******* end left index selection *******/
@@ -229,12 +231,16 @@ markup_dialogue (GtkWidget *widget, gpointer data)
   gtk_grid_attach (GTK_GRID (right_grid), right_xi_label, 0, 0, 1, 1);
   GtkWidget *right_xi_select =
     gtk_spin_button_new_with_range (-1.0, 10000.0, 1.0);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (right_xi_select),
+			     (gdouble)x_index);
   gtk_grid_attach (GTK_GRID (right_grid), right_xi_select, 1, 0, 1, 1);
   
   GtkWidget *right_yi_label = gtk_label_new (_ ("Y index select"));
   gtk_grid_attach (GTK_GRID (right_grid), right_yi_label, 0, 1, 1, 1);
   GtkWidget *right_yi_select =
     gtk_spin_button_new_with_range (-1.0, 10000.0, 1.0);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (right_yi_select),
+			     (gdouble)y_index);
   gtk_grid_attach (GTK_GRID (right_grid), right_yi_select, 1, 1, 1, 1);
 
   /******* end index selection *******/
