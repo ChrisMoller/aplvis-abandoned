@@ -4,7 +4,8 @@ bin_PROGRAMS = aplvis
 
 aplvis_SOURCES = aplvis.c aplvis.h \
                  save.c save.h \
-                 markup.c markup.h
+                 markup.c markup.h \
+                 render.c render.h
 
 BUILT_SOURCES = xml-kwds.h
 

@@ -27,6 +27,8 @@
 #include <gtk/gtk.h>
 #include <glib/gi18n-lib.h>
 
+#include <plplot.h>
+
 #include "aplvis.h"
 #include "markup.h"
 #include "xml-kwds.h"

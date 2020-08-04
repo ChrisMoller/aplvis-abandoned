@@ -49,13 +49,11 @@
 #include "aplvis.h"
 #include "save.h"
 #include "markup.h"
+#include "render.h"
 
 #define DEFAULT_WIDTH  480
 #define DEFAULT_HEIGHT 320
 
-static gint             width           = DEFAULT_WIDTH;
-static gint             height          = DEFAULT_HEIGHT;
-static GtkWidget       *da              = NULL;
 static GtkWidget       *status;
 static GFileMonitor    *gfm;
 static gulong           gsc;
@@ -70,7 +68,9 @@ gboolean		loading = FALSE;
 indep_s indep_x = {NULL, NULL, NULL /*, NULL*/};
 indep_s indep_y = {NULL, NULL, NULL /*, NULL*/};
 GtkAdjustment *gran_adj = NULL;
-GtkWidget *gran_spin = NULL;
+GtkWidget *gran_spin    = NULL;
+gint             width           = DEFAULT_WIDTH;
+gint             height          = DEFAULT_HEIGHT;
 
 GtkWidget       *window          = NULL;
 GtkWidget       *title;
@@ -78,13 +78,18 @@ GtkWidget       *expression;
 
 #define DEFAULT_GRANULARITY	60
 gint granularity = DEFAULT_GRANULARITY;
-PLFLT *xvec= NULL;
-PLFLT *yvec= NULL;
-PLFLT xmin, xmax, ymin, ymax;
+PLFLT *xvec = NULL;
+PLFLT *yvec = NULL;
+PLFLT xmin = 0.0;
+PLFLT xmax = 0.0;
+PLFLT ymin = 0.0;
+PLFLT ymax = 0.0;
 int rank =  0;
 uint64_t count = 0;
+GtkWidget       *da              = NULL;
 
-#define expvar "expvar⍙"
+//#define expvar "expvar⍙"
+#define expvar "expvarλ"
 
 static void
 set_indep (indep_s *indep)
@@ -108,12 +113,7 @@ set_indep (indep_s *indep)
       gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (gran_spin));
     
     gdouble k_incr = (x_adj_max - x_adj_min) / (double)granularity;
-    /***
-	1..4 ==> i 2 3 4 ==> 1 + 0 1 2 3 ==> 1 + ⍳(4 - 1)
-	4..1 ==> 4 3 2 1 ==> 4 - 0 1 2 3 ==> 4 - ⍳(4 - 1)
-	-4..-1 ==> -4 -3 -2 -1 ==> (0-4) + ⍳(4 - 1)
-	-1..-4 ==> -1 -2 -3 -4 ==> (0-1) - ⍳(4 - 1)
-     ***/
+    
 #define INCR_FMT "%s ← (0%c%g) %c %g×⍳(%d)"
     char *x_incr =
       g_strdup_printf (INCR_FMT,
@@ -186,6 +186,11 @@ expression_activate_cb (GtkEntry *entry,
   xmax = ymax = -MAXDOUBLE;
   xmin = ymin =  MAXDOUBLE;
   if (count > 1) {
+    if (rank == 0) {
+      gtk_label_set_text (GTK_LABEL (status),
+			  _("Sorry, but it's hard to plot a point..."));
+      return;
+    }
     if (rank == 1) {
       int i;
       APL_value quad_io = get_var_value("⎕io", "something");
@@ -208,43 +213,13 @@ expression_activate_cb (GtkEntry *entry,
 	if (ymin > yvec[i]) ymin = yvec[i];
       }
     }
-    else if (rank == 2) {
-      int i, j;
-      //APL_value quad_io = get_var_value("⎕io", "something");
-      //      int qio = get_int (quad_io, 0);
-      count /= 2;
-      xvec = malloc (count * sizeof(PLFLT));
-      yvec = malloc (count * sizeof(PLFLT));
-      for (i = 0, j = 0; j < count; i++, j++) {
-	switch(get_type (expval, i)) {
-	case CCT_INT:	
-	  xvec[j] = ((PLFLT)get_int (expval, i));
-	  break;
-	case CCT_FLOAT:
-	  xvec[j] = (PLFLT)get_real (expval, i);
-	  break;
-	}
-	if (xmax < xvec[j]) xmax = xvec[j];
-	if (xmin > xvec[j]) xmin = xvec[j];
-      }
-      for (j = 0; j < count; i++,j++) {
-	switch(get_type (expval, i)) {
-	case CCT_INT:	
-	  yvec[j] = ((PLFLT)get_int (expval, i));
-	  break;
-	case CCT_FLOAT:
-	  yvec[j] = (PLFLT)get_real (expval, i);
-	  break;
-	}
-	if (ymax < yvec[j]) ymax = yvec[j];
-	if (ymin > yvec[j]) ymin = yvec[j];
-      }
-    }
+    else if (rank == 2) plot_rank_2 (expval);
 
     guint width = gtk_widget_get_allocated_width (da);
     guint height = gtk_widget_get_allocated_height (da);
     gtk_widget_queue_draw_area (da, 0, 0, width, height);
   }
+  else gtk_label_set_text (GTK_LABEL (status), _ ("No data to plot."));
 }
 
 static void
@@ -517,6 +492,48 @@ create_limit_spin (GtkWidget *grid, indep_s *indep,
   gtk_grid_attach (GTK_GRID (grid), axis_x_max, (*col)++, *row, 1, 1);
 }
 
+#if 0
+#if 0
+static const gchar *css_data =
+"* {\n"
+"  font-size: small;\n"
+"}\n"
+"#SpinFrame {\n"
+"  background-color:green;\n"
+"  margin-top:    -2px;\n"
+"  margin-bottom: -2px;\n"
+"}\n"
+  ;
+#else
+const gchar *css_data =
+"* #button {\n"
+"  background-color:rgba (192, 0, 0, 1);\n"
+"}\n"
+  ;
+#endif
+
+static const gchar *css_data =" .mycolourchooser {width: 16px;}";
+#endif
+
+
+#if 0
+static void
+set_up_css ()
+{
+  GtkCssProvider *provider = gtk_css_provider_new ();
+  gtk_css_provider_load_from_data (provider,
+                                   css_data,
+                                   -1,
+                                   NULL);
+  GdkDisplay *display = gdk_display_get_default ();
+  GdkScreen *screen   = gdk_display_get_default_screen (display);
+  gtk_style_context_add_provider_for_screen (screen,
+            GTK_STYLE_PROVIDER (provider),
+            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  g_object_unref (provider);
+}
+#endif
+
 static void
 sigint_handler (int sig, siginfo_t *si, void *data)
 {
@@ -563,6 +580,9 @@ main (int ac, char *av[])
   init_libapl (av[0], 0);
   
   gtk_init (&ac, &av);
+#if 0
+  set_up_css ();
+#endif
 
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   g_signal_connect (window, "key-press-event",

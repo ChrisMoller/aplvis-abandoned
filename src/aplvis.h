@@ -19,6 +19,13 @@ extern GtkWidget       *gran_spin;
 extern GtkWidget       *expression;
 extern GtkWidget       *window;
 extern gboolean         loading;
+extern uint64_t 	count;
+extern PLFLT 	       *xvec;
+extern PLFLT 	       *yvec;
+extern PLFLT xmin, xmax, ymin, ymax;
+extern gint             width;
+extern gint             height;
+extern GtkWidget       *da;  
 
 void expression_activate_cb (GtkEntry *entry, gpointer  user_data);
 

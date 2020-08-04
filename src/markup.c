@@ -26,7 +26,9 @@
 #define _GNU_SOURCE
 #include <gtk/gtk.h>
 #include <glib/gi18n-lib.h>
+#include <math.h>
 
+#include <plplot.h>
 #include "aplvis.h"
 #include "markup.h"
 
@@ -47,10 +49,139 @@ coords_e coords = COORDS_CARTESIAN;
 gint x_index = -1;
 gint y_index = -1;
 
+static const gchar *raw_default_colours[]
+= {
+   "#000000",
+   "#ff0000",
+   "#ffff00",
+   "#00ff00",
+   "#7fffd4",
+   "#ffc0cb",
+   "#f5deb3",
+   "#bebebe",
+   "#a52a2a",
+   "#0000ff",
+   "#8a2be2",
+   "#00ffff",
+   "#40e0d0",
+   "#ff00ff",
+   "#fa8072",
+   "#ffffff"
+};
+
+static gboolean base_colours_set = FALSE;
+static GdkRGBA base_colours[ sizeof(raw_default_colours) / sizeof (gchar *)];
+static double pwd;
+static double phd;
+static GtkWidget *dialogue;
+static cairo_t *cc_cr;
+
+static void
+build_patches ()
+{
+  int row, col, i;
+  cairo_set_font_size (cc_cr, 15.0);
+  for (i = 0, row = 0; row < 4; row++) {
+    for (col = 0; col < 4; col++, i++) {
+      cairo_rectangle (cc_cr,
+		       pwd * (double)col,
+		       phd * (double)row,
+		       pwd, phd);
+      cairo_set_source_rgba (cc_cr,
+			     base_colours[i].red,
+			     base_colours[i].green,
+			     base_colours[i].blue,
+			     base_colours[i].alpha);
+      cairo_fill (cc_cr);
+      cairo_set_source_rgba (cc_cr, 0.0, 0.0, 0.0, 1.0);
+      char bfr[8];
+      cairo_move_to (cc_cr,
+		     pwd * (double)col + 5.0,
+		     phd * (double)(row + 1) - 5.0);
+      sprintf (bfr, "%d", i);
+      cairo_show_text (cc_cr, bfr);
+      cairo_stroke (cc_cr);
+    }
+  }
+
+  cairo_set_source_rgba (cc_cr, 0.0, 0.0, 0.0, 1.0);
+  double lw = cairo_get_line_width (cc_cr);
+  for (row = 0; row <= 4; row++) {
+    cairo_move_to (cc_cr, 0.0, phd * (double)row);
+    cairo_rel_line_to (cc_cr, ((double)width - pwd) - lw, 0.0);
+    cairo_stroke (cc_cr);
+  }
+  for (col = 0; col <= 4; col++) {
+    cairo_move_to (cc_cr, pwd * (double)col, 0.0);
+    cairo_rel_line_to (cc_cr, 0.0, (double)height - lw);
+    cairo_stroke (cc_cr);
+  }
+}
+
+  static gboolean
+swatch_da_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
+{
+  guint width = gtk_widget_get_allocated_width (widget);
+  guint height = gtk_widget_get_allocated_height (widget);
+  guint patch_width  = width/5;
+  guint patch_height = height/4;
+
+  pwd = (double)patch_width;
+  phd = (double)patch_height;
+
+  if (!base_colours_set) {
+    int i;
+    for (i = 0; i< sizeof(raw_default_colours) / sizeof (gchar *); i++)
+      gdk_rgba_parse (&base_colours[i], raw_default_colours[i]);
+    base_colours_set = TRUE;
+  }
+
+  cairo_surface_t *surface =
+    cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+  cairo_set_source_surface (cr, surface, 0, 0);
+
+  cc_cr = cr;
+  build_patches ();
+
+  return GDK_EVENT_STOP;
+}
+
+static gboolean
+swatch_da_button_press_event (GtkWidget      *widget,
+			      GdkEventButton *event,
+			      gpointer        data)
+{
+  int xp = (int)trunc ((event->x)/pwd);
+  int yp = (int)trunc ((event->y)/phd);
+  int which = (4 * yp) + xp;
+  if (which >= 0 && which < 16) {
+    gchar bfr[267];
+    sprintf (bfr, "Colour for %d", which);
+    GtkWidget *cc = gtk_color_chooser_dialog_new (bfr, GTK_WINDOW (dialogue));
+    gtk_color_chooser_set_rgba (GTK_COLOR_CHOOSER (cc),&base_colours[which]);
+    gtk_window_set_position (GTK_WINDOW (cc), GTK_WIN_POS_MOUSE);
+    gtk_dialog_set_default_response (GTK_DIALOG (cc),
+				     GTK_RESPONSE_OK);
+    gtk_widget_show_all (cc);
+    gint response = gtk_dialog_run (GTK_DIALOG (cc));
+
+    if (response == GTK_RESPONSE_OK) {
+      fprintf (stderr, "setting %d\n", which);
+      gtk_color_chooser_get_rgba (GTK_COLOR_CHOOSER (cc),&base_colours[which]);
+      build_patches ();
+    }
+    gtk_widget_destroy (cc);
+  }
+  else {
+    // fixme - error
+  }
+  return GDK_EVENT_STOP;
+}
+
 void
 markup_dialogue (GtkWidget *widget, gpointer data)
 {
-  GtkWidget *dialogue =
+  dialogue =
     gtk_dialog_new_with_buttons (_ ("Appearance and Background Colour"),
 				 GTK_WINDOW (window),
 				 GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -102,10 +233,34 @@ markup_dialogue (GtkWidget *widget, gpointer data)
   gtk_grid_attach (GTK_GRID (grid), z_lbl_entry, col++, row, 1, 1);
   gtk_entry_set_placeholder_text (GTK_ENTRY (z_lbl_entry),  _ ("Z Label"));
 
+  /******** colour ************/
+
+  GtkWidget *swatch_da =  gtk_drawing_area_new ();
+  gtk_widget_set_size_request (swatch_da, 64, 64);
+  g_signal_connect (swatch_da, "draw",
+                    G_CALLBACK (swatch_da_draw_cb), NULL);
+  g_signal_connect (swatch_da, "button-press-event",
+                    G_CALLBACK (swatch_da_button_press_event), NULL);
+  gtk_widget_add_events (swatch_da, GDK_BUTTON_PRESS_MASK);
+  gtk_widget_set_hexpand (swatch_da, TRUE);
+  gtk_widget_set_vexpand (swatch_da, TRUE);
+  gtk_box_pack_start (GTK_BOX (hbox), GTK_WIDGET (swatch_da),
+		      TRUE, TRUE, 4);
+
+#if 0
+#ifndef OLD_COLOUR
+  GtkWidget *colour_chooser =
+    gtk_color_button_new_with_rgba (&bg_colour);
+#else
   GtkWidget *colour_chooser = gtk_color_chooser_widget_new ();
   gtk_color_chooser_set_rgba (GTK_COLOR_CHOOSER (colour_chooser), &bg_colour);
+  gtk_style_context_add_class(colour_chooser, "mycolourchooser");
+#endif
   gtk_box_pack_start (GTK_BOX (hbox), GTK_WIDGET (colour_chooser),
 		      TRUE, TRUE, 4);
+#endif
+  
+  /******** end colour ************/
   
   GtkWidget *separator = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
   gtk_box_pack_start (GTK_BOX (outer_vbox), GTK_WIDGET (separator),
@@ -260,8 +415,10 @@ markup_dialogue (GtkWidget *widget, gpointer data)
     if (z_label) g_free (z_label);
     z_label = g_strdup (gtk_entry_get_text (GTK_ENTRY (z_lbl_entry)));
 
+#if 0
     gtk_color_chooser_get_rgba (GTK_COLOR_CHOOSER (colour_chooser),
 				&bg_colour);
+#endif
     expression_activate_cb (NULL, NULL);
 
     mode = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (mode_2d_radio))
