@@ -101,16 +101,29 @@ save_dialogue (GtkWidget *widget, gpointer data)
 	case COORDS_SPHERICAL:	coord_str = KEYWORD_SPHERICAL; break;
 	}
 	
-	fprintf (ofile, "  <%s %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%s\" %s=\"%s\" %s=\"%d\" %s=\"%d\">\n",
+	fprintf (ofile, "  <%s %s=\"%s\" %s=\"%s\" %s=\"%d\" %s=\"%d\">\n",
 		 KEYWORD_SETTINGS,
-		 KEYWORD_BG_RED,   bg_colour.red,
-		 KEYWORD_BG_GREEN, bg_colour.green,
-		 KEYWORD_BG_BLUE,  bg_colour.blue,
-		 KEYWORD_BG_ALPHA, bg_colour.alpha,
 		 KEYWORD_MODE,	   mode_str,
 		 KEYWORD_COORDS,   coord_str,
 		 KEYWORD_X_INDEX,  x_index,
 		 KEYWORD_Y_INDEX,  y_index);
+	
+	fprintf (ofile, "    <%s>\n", KEYWORD_COLOURS);
+
+	int cx;
+	for (cx = 0; cx < base_colour_count; cx++) {
+	  fprintf (ofile, "      <%s %s=\"%d\" %s=\"%g\" %s=\"%g\" %s=\"%g\" %s=\"%g\"/>\n",
+		   KEYWORD_COLOUR,
+		   KEYWORD_INDEX, cx,
+		   KEYWORD_RED,   base_colours[cx].red,
+		   KEYWORD_GREEN, base_colours[cx].green,
+		   KEYWORD_BLUE,  base_colours[cx].blue,
+		   KEYWORD_ALPHA, base_colours[cx].alpha
+		   );
+	}
+
+	
+	fprintf (ofile, "    </%s>\n", KEYWORD_COLOURS);
 	
 	const gchar *expr = gtk_entry_get_text (GTK_ENTRY (expression));
 	fprintf (ofile, "    <%1$s>%2$s</%1$s>\n", KEYWORD_EXPRESSION, expr);
@@ -228,6 +241,60 @@ static const GMarkupParser expression_parser =
   };
 
 static void
+colour_start_element (GMarkupParseContext *context,
+		      const gchar         *element_name,
+		      const gchar        **attribute_names,
+		      const gchar        **attribute_values,
+		      gpointer             user_data,
+		      GError             **error)
+{
+  switch(get_kwd (element_name)) {
+  case KWD_COLOUR:
+    {
+      gchar *index_str = NULL;
+      gchar *red_str = NULL;
+      gchar *green_str = NULL;
+      gchar *blue_str = NULL;
+      gchar *alpha_str = NULL;
+  
+      g_markup_collect_attributes (element_name,
+				   attribute_names,
+				   attribute_values,
+				   error,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_INDEX, &index_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_RED, &red_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_GREEN, &green_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_BLUE, &blue_str,
+				   G_MARKUP_COLLECT_STRING,
+				   KEYWORD_ALPHA, &alpha_str,
+				   G_MARKUP_COLLECT_INVALID);
+  
+      gint ix = atoi (index_str);
+      base_colours[ix].red   = g_strtod (red_str, NULL);
+      base_colours[ix].green = g_strtod (green_str, NULL);
+      base_colours[ix].blue  = g_strtod (blue_str, NULL);
+      base_colours[ix].alpha = g_strtod (alpha_str, NULL);
+      break;
+    }
+  }
+}
+
+
+static void
+colour_end_element (GMarkupParseContext *context,
+			 const gchar *element_name,
+			 gpointer      user_data,
+			 GError      **error)
+{
+  switch(get_kwd (element_name)) {
+  }
+}
+
+static void
 independent_start_element (GMarkupParseContext *context,
 			   const gchar         *element_name,
 			   const gchar        **attribute_names,
@@ -316,6 +383,15 @@ static const GMarkupParser independent_parser =
    NULL				// error              
   };
 
+static const GMarkupParser colour_parser =
+  {
+   colour_start_element,	// start_element
+   colour_end_element,		// parser.end_element
+   NULL,			// text
+   NULL,			// parser.passthrough
+   NULL				// error              
+  };
+
 static void
 settings_start_element (GMarkupParseContext *context,
 			const gchar         *element_name,
@@ -325,6 +401,9 @@ settings_start_element (GMarkupParseContext *context,
 			GError             **error)
 {
   switch(get_kwd (element_name)) {
+  case KWD_COLOURS:
+    g_markup_parse_context_push (context, &colour_parser, NULL);
+    break;
   case KWD_EXPRESSION:
     g_markup_parse_context_push (context, &expression_parser, NULL);
     break;
@@ -357,6 +436,7 @@ settings_end_element (GMarkupParseContext *context,
 		     GError      **error)
 {
   switch(get_kwd (element_name)) {
+  case KWD_COLOURS:
   case KWD_EXPRESSION:
   case KWD_INDEPENDENT:
     g_markup_parse_context_pop (context);
@@ -478,10 +558,6 @@ aplvis_start_element (GMarkupParseContext *context,
     break;
   case KWD_SETTINGS:
     {
-      gchar *bg_red_str = NULL;
-      gchar *bg_green_str = NULL;
-      gchar *bg_blue_str = NULL;
-      gchar *bg_alpha_str = NULL;
       gchar *mode_str = NULL;
       gchar *coords_str = NULL;
       gchar *x_idx_str = NULL;
@@ -491,14 +567,6 @@ aplvis_start_element (GMarkupParseContext *context,
 				   attribute_values,
 				   error,
 				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_BG_RED, &bg_red_str,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_BG_GREEN, &bg_green_str,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_BG_BLUE, &bg_blue_str,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_BG_ALPHA, &bg_alpha_str,
-				   G_MARKUP_COLLECT_STRING,
 				   KEYWORD_COORDS, &coords_str,
 				   G_MARKUP_COLLECT_STRING,
 				   KEYWORD_MODE, &mode_str,
@@ -507,10 +575,6 @@ aplvis_start_element (GMarkupParseContext *context,
 				   G_MARKUP_COLLECT_STRING,
 				   KEYWORD_Y_INDEX, &y_idx_str,
 				   G_MARKUP_COLLECT_INVALID);
-      bg_colour.red   = g_strtod (bg_red_str, NULL);
-      bg_colour.green = g_strtod (bg_green_str, NULL);
-      bg_colour.blue  = g_strtod (bg_blue_str, NULL);
-      bg_colour.alpha = g_strtod (bg_alpha_str, NULL);
       x_index = atoi (x_idx_str);
       y_index = atoi (y_idx_str);
       gint kwd = get_kwd (mode_str);

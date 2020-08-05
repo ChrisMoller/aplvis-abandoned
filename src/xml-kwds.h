@@ -90,72 +90,84 @@
 #define KWD_STEP_INCREMENT 1020 
 
 
-#define KEYWORD_BG_RED "bg_red"
-#define KWD_BG_RED 1021 
-
-
-#define KEYWORD_BG_GREEN "bg_green"
-#define KWD_BG_GREEN 1022 
-
-
-#define KEYWORD_BG_BLUE "bg_blue"
-#define KWD_BG_BLUE 1023 
-
-
-#define KEYWORD_BG_ALPHA "bg_alpha"
-#define KWD_BG_ALPHA 1024 
-
-
 #define KEYWORD_X_LABEL "x_label"
-#define KWD_X_LABEL 1025 
+#define KWD_X_LABEL 1021 
 
 
 #define KEYWORD_Y_LABEL "y_label"
-#define KWD_Y_LABEL 1026 
+#define KWD_Y_LABEL 1022 
 
 
 #define KEYWORD_Z_LABEL "z_label"
-#define KWD_Z_LABEL 1027 
+#define KWD_Z_LABEL 1023 
 
 
 #define KEYWORD_MODE "mode"
-#define KWD_MODE 1028 
+#define KWD_MODE 1024 
 
 
 #define KEYWORD_COORDS "coords"
-#define KWD_COORDS 1029 
+#define KWD_COORDS 1025 
 
 
 #define KEYWORD_X_INDEX "x_index"
-#define KWD_X_INDEX 1030 
+#define KWD_X_INDEX 1026 
 
 
 #define KEYWORD_Y_INDEX "y_index"
-#define KWD_Y_INDEX 1031 
+#define KWD_Y_INDEX 1027 
 
 
 #define KEYWORD_CARTESIAN "cartesian"
-#define KWD_CARTESIAN 1032 
+#define KWD_CARTESIAN 1028 
 
 
 #define KEYWORD_POLAR "polar"
-#define KWD_POLAR 1033 
+#define KWD_POLAR 1029 
 
 
 #define KEYWORD_CYLINDRICAL "cylindrical"
-#define KWD_CYLINDRICAL 1034 
+#define KWD_CYLINDRICAL 1030 
 
 
 #define KEYWORD_SPHERICAL "spherical"
-#define KWD_SPHERICAL 1035 
+#define KWD_SPHERICAL 1031 
 
 
 #define KEYWORD_2D "2d"
-#define KWD_2D 1036 
+#define KWD_2D 1032 
 
 
 #define KEYWORD_3D "3d"
-#define KWD_3D 1037 
+#define KWD_3D 1033 
+
+
+#define KEYWORD_COLOURS "colours"
+#define KWD_COLOURS 1034 
+
+
+#define KEYWORD_COLOUR "colour"
+#define KWD_COLOUR 1035 
+
+
+#define KEYWORD_INDEX "index"
+#define KWD_INDEX 1036 
+
+
+#define KEYWORD_RED "red"
+#define KWD_RED 1037 
+
+
+#define KEYWORD_GREEN "green"
+#define KWD_GREEN 1038 
+
+
+#define KEYWORD_BLUE "blue"
+#define KWD_BLUE 1039 
+
+
+#define KEYWORD_ALPHA "alpha"
+#define KWD_ALPHA 1040 
 
 
 
@@ -187,10 +199,6 @@ keyword_s keywords[] = {
   { KEYWORD_PAGE_SIZE, KWD_PAGE_SIZE },
   { KEYWORD_PAGE_INCREMENT, KWD_PAGE_INCREMENT },
   { KEYWORD_STEP_INCREMENT, KWD_STEP_INCREMENT },
-  { KEYWORD_BG_RED, KWD_BG_RED },
-  { KEYWORD_BG_GREEN, KWD_BG_GREEN },
-  { KEYWORD_BG_BLUE, KWD_BG_BLUE },
-  { KEYWORD_BG_ALPHA, KWD_BG_ALPHA },
   { KEYWORD_X_LABEL, KWD_X_LABEL },
   { KEYWORD_Y_LABEL, KWD_Y_LABEL },
   { KEYWORD_Z_LABEL, KWD_Z_LABEL },
@@ -204,7 +212,14 @@ keyword_s keywords[] = {
   { KEYWORD_SPHERICAL, KWD_SPHERICAL },
   { KEYWORD_2D, KWD_2D },
   { KEYWORD_3D, KWD_3D },
+  { KEYWORD_COLOURS, KWD_COLOURS },
+  { KEYWORD_COLOUR, KWD_COLOUR },
+  { KEYWORD_INDEX, KWD_INDEX },
+  { KEYWORD_RED, KWD_RED },
+  { KEYWORD_GREEN, KWD_GREEN },
+  { KEYWORD_BLUE, KWD_BLUE },
+  { KEYWORD_ALPHA, KWD_ALPHA },
 
 };
-gint nr_keys = 38;
+gint nr_keys = 41;
 #endif /* XML_KWDS_H*/

@@ -563,6 +563,8 @@ main (int ac, char *av[])
   g_file_monitor_set_rate_limit (gfm, 200);
   gsc = g_signal_connect (G_OBJECT(gfm), "changed",
 			  G_CALLBACK (monitor_changed), NULL);
+
+  init_colours ();
   
   GOptionEntry entries[] =
     {

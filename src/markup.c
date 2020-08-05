@@ -36,6 +36,7 @@ gchar *x_label = NULL;
 gchar *y_label = NULL;
 gchar *z_label = NULL;
 
+#if 0
 #define DEFAULT_BG_RED		0.3
 #define DEFAULT_BG_GREEN	0.5
 #define DEFAULT_BG_BLUE		0.7
@@ -43,6 +44,7 @@ gchar *z_label = NULL;
 
 GdkRGBA bg_colour = {DEFAULT_BG_RED, DEFAULT_BG_GREEN,
 		     DEFAULT_BG_BLUE, DEFAULT_BG_ALPHA};
+#endif
 
 mode_e mode = MODE_2D;
 coords_e coords = COORDS_CARTESIAN;
@@ -67,20 +69,24 @@ static const gchar *raw_default_colours[]
    "#ff00ff",
    "#fa8072",
    "#ffffff",
-   "#000000",
+   "#4d80b3",		// screen bg: 0.3, 0.5, 0.7
    "#ffffff",
    "#000000",
    "#000000"
 };
 
 static gboolean base_colours_set = FALSE;
-static GdkRGBA base_colours[ sizeof(raw_default_colours) / sizeof (gchar *)];
+gint base_colour_count = sizeof(raw_default_colours) / sizeof (gchar *);
+GdkRGBA base_colours[ sizeof(raw_default_colours) / sizeof (gchar *)];
 static double pwd;
 static double phd;
 static guint swatch_width;
 static guint swatch_height;
 static GtkWidget *dialogue;
 static cairo_t *cc_cr;
+
+#define BG_INDEX 16
+GdkRGBA bg_colour;
 
 static void
 fill_patch (gint i, gint row, gint col)
@@ -136,6 +142,18 @@ build_patches ()
   }
 }
 
+void
+init_colours ()
+{
+  if (!base_colours_set) {
+    int i;
+    for (i = 0; i < base_colour_count; i++) 
+      gdk_rgba_parse (&base_colours[i], raw_default_colours[i]);
+    base_colours_set = TRUE;
+    bg_colour = base_colours[BG_INDEX];
+  }
+}
+
   static gboolean
 swatch_da_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
 {
@@ -143,13 +161,6 @@ swatch_da_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
   swatch_height = gtk_widget_get_allocated_height (widget);
   pwd = (double)(swatch_width/5);
   phd = (double)(swatch_height/4);
-
-  if (!base_colours_set) {
-    int i;
-    for (i = 0; i< sizeof(raw_default_colours) / sizeof (gchar *); i++) 
-      gdk_rgba_parse (&base_colours[i], raw_default_colours[i]);
-    base_colours_set = TRUE;
-  }
 
   cairo_surface_t *surface =
     cairo_image_surface_create (CAIRO_FORMAT_ARGB32,

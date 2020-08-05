@@ -22,7 +22,9 @@ extern coords_e coords;
 
 extern gint x_index;
 extern gint y_index;
-	      
 
+extern GdkRGBA base_colours[];
+extern gint base_colour_count;
 void markup_dialogue (GtkWidget *widget, gpointer data);
+void init_colours ();
 #endif // MARKUP_H
