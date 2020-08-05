@@ -66,15 +66,49 @@ static const gchar *raw_default_colours[]
    "#40e0d0",
    "#ff00ff",
    "#fa8072",
-   "#ffffff"
+   "#ffffff",
+   "#000000",
+   "#ffffff",
+   "#000000",
+   "#000000"
 };
 
 static gboolean base_colours_set = FALSE;
 static GdkRGBA base_colours[ sizeof(raw_default_colours) / sizeof (gchar *)];
 static double pwd;
 static double phd;
+static guint swatch_width;
+static guint swatch_height;
 static GtkWidget *dialogue;
 static cairo_t *cc_cr;
+
+static void
+fill_patch (gint i, gint row, gint col)
+{
+  cairo_rectangle (cc_cr,
+		   pwd * (double)col,
+		   phd * (double)row,
+		   pwd, phd);
+  cairo_set_source_rgba (cc_cr,
+			 base_colours[i].red,
+			 base_colours[i].green,
+			 base_colours[i].blue,
+			 base_colours[i].alpha);
+  cairo_fill (cc_cr);
+  
+  cairo_set_source_rgba (cc_cr,
+			 1.0 - base_colours[i].red,
+			 1.0 - base_colours[i].green,
+			 1.0 - base_colours[i].blue,
+			 base_colours[i].alpha);
+  char bfr[8];
+  cairo_move_to (cc_cr,
+		 pwd * (double)col + 5.0,
+		 phd * (double)(row + 1) - 5.0);
+  sprintf (bfr, "%d", i);
+  cairo_show_text (cc_cr, bfr);
+  cairo_stroke (cc_cr);
+}
 
 static void
 build_patches ()
@@ -82,38 +116,22 @@ build_patches ()
   int row, col, i;
   cairo_set_font_size (cc_cr, 15.0);
   for (i = 0, row = 0; row < 4; row++) {
-    for (col = 0; col < 4; col++, i++) {
-      cairo_rectangle (cc_cr,
-		       pwd * (double)col,
-		       phd * (double)row,
-		       pwd, phd);
-      cairo_set_source_rgba (cc_cr,
-			     base_colours[i].red,
-			     base_colours[i].green,
-			     base_colours[i].blue,
-			     base_colours[i].alpha);
-      cairo_fill (cc_cr);
-      cairo_set_source_rgba (cc_cr, 0.0, 0.0, 0.0, 1.0);
-      char bfr[8];
-      cairo_move_to (cc_cr,
-		     pwd * (double)col + 5.0,
-		     phd * (double)(row + 1) - 5.0);
-      sprintf (bfr, "%d", i);
-      cairo_show_text (cc_cr, bfr);
-      cairo_stroke (cc_cr);
-    }
+    for (col = 0; col < 4; col++, i++)
+      fill_patch (i, row, col);
   }
+  for (row = 0; row < 4; row++, i++) 
+    fill_patch (i, row, 4);
 
   cairo_set_source_rgba (cc_cr, 0.0, 0.0, 0.0, 1.0);
   double lw = cairo_get_line_width (cc_cr);
   for (row = 0; row <= 4; row++) {
     cairo_move_to (cc_cr, 0.0, phd * (double)row);
-    cairo_rel_line_to (cc_cr, ((double)width - pwd) - lw, 0.0);
+    cairo_rel_line_to (cc_cr, (double)swatch_width - lw, 0.0);
     cairo_stroke (cc_cr);
   }
-  for (col = 0; col <= 4; col++) {
+  for (col = 0; col <= 4 + 1; col++) {
     cairo_move_to (cc_cr, pwd * (double)col, 0.0);
-    cairo_rel_line_to (cc_cr, 0.0, (double)height - lw);
+    cairo_rel_line_to (cc_cr, 0.0, (double)swatch_height + lw);
     cairo_stroke (cc_cr);
   }
 }
@@ -121,23 +139,21 @@ build_patches ()
   static gboolean
 swatch_da_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
 {
-  guint width = gtk_widget_get_allocated_width (widget);
-  guint height = gtk_widget_get_allocated_height (widget);
-  guint patch_width  = width/5;
-  guint patch_height = height/4;
-
-  pwd = (double)patch_width;
-  phd = (double)patch_height;
+  swatch_width = gtk_widget_get_allocated_width (widget);
+  swatch_height = gtk_widget_get_allocated_height (widget);
+  pwd = (double)(swatch_width/5);
+  phd = (double)(swatch_height/4);
 
   if (!base_colours_set) {
     int i;
-    for (i = 0; i< sizeof(raw_default_colours) / sizeof (gchar *); i++)
+    for (i = 0; i< sizeof(raw_default_colours) / sizeof (gchar *); i++) 
       gdk_rgba_parse (&base_colours[i], raw_default_colours[i]);
     base_colours_set = TRUE;
   }
 
   cairo_surface_t *surface =
-    cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+    cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+				swatch_width, swatch_height);
   cairo_set_source_surface (cr, surface, 0, 0);
 
   cc_cr = cr;
