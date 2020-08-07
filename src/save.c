@@ -101,12 +101,13 @@ save_dialogue (GtkWidget *widget, gpointer data)
 	case COORDS_SPHERICAL:	coord_str = KEYWORD_SPHERICAL; break;
 	}
 	
-	fprintf (ofile, "  <%s %s=\"%s\" %s=\"%s\" %s=\"%d\" %s=\"%d\">\n",
+	fprintf (ofile, "  <%s %s=\"%s\" %s=\"%s\" %s=\"%d\" %s=\"%d\" %s=\"%d\">\n",
 		 KEYWORD_SETTINGS,
 		 KEYWORD_MODE,	   mode_str,
 		 KEYWORD_COORDS,   coord_str,
-		 KEYWORD_X_INDEX,  x_index,
-		 KEYWORD_Y_INDEX,  y_index);
+		 KEYWORD_X_INDEX_2D,  x_index_2d,
+		 KEYWORD_X_INDEX_3D,  x_index_3d,
+		 KEYWORD_Y_INDEX_3D,  y_index_3d);
 	
 	fprintf (ofile, "    <%s>\n", KEYWORD_COLOURS);
 
@@ -160,7 +161,7 @@ save_dialogue (GtkWidget *widget, gpointer data)
     
 	fprintf (ofile, "  </%s>\n", KEYWORD_SETTINGS);
 	
-	fprintf (ofile, "</%s\n", KEYWORD_APLVIS);
+	fprintf (ofile, "</%s>\n", KEYWORD_APLVIS);
 	fflush (ofile);
 	fclose (ofile);
       }
@@ -256,28 +257,30 @@ colour_start_element (GMarkupParseContext *context,
       gchar *green_str = NULL;
       gchar *blue_str = NULL;
       gchar *alpha_str = NULL;
-  
-      g_markup_collect_attributes (element_name,
-				   attribute_names,
-				   attribute_values,
-				   error,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_INDEX, &index_str,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_RED, &red_str,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_GREEN, &green_str,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_BLUE, &blue_str,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_ALPHA, &alpha_str,
-				   G_MARKUP_COLLECT_INVALID);
-  
-      gint ix = atoi (index_str);
-      base_colours[ix].red   = g_strtod (red_str, NULL);
-      base_colours[ix].green = g_strtod (green_str, NULL);
-      base_colours[ix].blue  = g_strtod (blue_str, NULL);
-      base_colours[ix].alpha = g_strtod (alpha_str, NULL);
+
+      gboolean rc =
+	g_markup_collect_attributes (element_name,
+				     attribute_names,
+				     attribute_values,
+				     error,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_INDEX, &index_str,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_RED, &red_str,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_GREEN, &green_str,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_BLUE, &blue_str,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_ALPHA, &alpha_str,
+				     G_MARKUP_COLLECT_INVALID);
+      if (rc) {
+	gint ix = atoi (index_str);
+	base_colours[ix].red   = g_strtod (red_str, NULL);
+	base_colours[ix].green = g_strtod (green_str, NULL);
+	base_colours[ix].blue  = g_strtod (blue_str, NULL);
+	base_colours[ix].alpha = g_strtod (alpha_str, NULL);
+      }
       break;
     }
   }
@@ -322,30 +325,32 @@ independent_start_element (GMarkupParseContext *context,
       gchar *page_size = NULL;
       gchar *page_increment = NULL;
       gchar *step_increment = NULL;
-      g_markup_collect_attributes (element_name,
-				   attribute_names,
-				   attribute_values,
-				   error,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_LIMIT, &limit,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_VALUE, &value,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_UPPER, &upper,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_LOWER, &lower,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_PAGE_SIZE, &page_size,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_PAGE_INCREMENT, &page_increment,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_STEP_INCREMENT, &step_increment,
+      gboolean rc =
+	g_markup_collect_attributes (element_name,
+				     attribute_names,
+				     attribute_values,
+				     error,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_LIMIT, &limit,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_VALUE, &value,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_UPPER, &upper,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_LOWER, &lower,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_PAGE_SIZE, &page_size,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_PAGE_INCREMENT, &page_increment,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_STEP_INCREMENT, &step_increment,
 				   G_MARKUP_COLLECT_INVALID);
-      
-      GtkAdjustment *adj = (get_kwd (limit) == KWD_MINV) ?
-	indep->axis_min_adj : indep->axis_max_adj;
-      gtk_adjustment_set_value (GTK_ADJUSTMENT (adj),
-				g_strtod (value, NULL));
+      if (rc) { 
+	GtkAdjustment *adj = (get_kwd (limit) == KWD_MINV) ?	
+	  indep->axis_min_adj : indep->axis_max_adj;
+	gtk_adjustment_set_value (GTK_ADJUSTMENT (adj),
+				  g_strtod (value, NULL));
+      }
     }
     break;
   default:
@@ -410,16 +415,19 @@ settings_start_element (GMarkupParseContext *context,
   case KWD_INDEPENDENT:
     {
       gchar *axis = NULL;
-      g_markup_collect_attributes (element_name,
-				   attribute_names,
-				   attribute_values,
-				   error,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_AXIS, &axis,
-				   G_MARKUP_COLLECT_INVALID);
-      indep_s *indep =
-	(get_kwd (axis) == KWD_X_AXIS) ? &indep_x : &indep_y;
-      g_markup_parse_context_push (context, &independent_parser, indep);
+      gboolean rc =
+	g_markup_collect_attributes (element_name,
+				     attribute_names,
+				     attribute_values,
+				     error,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_AXIS, &axis,
+				     G_MARKUP_COLLECT_INVALID);
+      if (rc) {
+	indep_s *indep =
+	  (get_kwd (axis) == KWD_X_AXIS) ? &indep_x : &indep_y;
+	g_markup_parse_context_push (context, &independent_parser, indep);
+      }
     }
     break;
   default:
@@ -560,33 +568,40 @@ aplvis_start_element (GMarkupParseContext *context,
     {
       gchar *mode_str = NULL;
       gchar *coords_str = NULL;
-      gchar *x_idx_str = NULL;
-      gchar *y_idx_str = NULL;
-      g_markup_collect_attributes (element_name,
-				   attribute_names,
-				   attribute_values,
-				   error,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_COORDS, &coords_str,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_MODE, &mode_str,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_X_INDEX, &x_idx_str,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_Y_INDEX, &y_idx_str,
-				   G_MARKUP_COLLECT_INVALID);
-      x_index = atoi (x_idx_str);
-      y_index = atoi (y_idx_str);
-      gint kwd = get_kwd (mode_str);
-      mode = (kwd == KWD_2D) ? MODE_2D : MODE_3D;
-      kwd = get_kwd (coords_str);
-      switch(kwd) {
-      case KWD_CARTESIAN:	coords = COORDS_CARTESIAN;	break;
-      case KWD_POLAR:		coords = COORDS_POLAR;		break;
-      case KWD_CYLINDRICAL: 	coords = COORDS_CYLINDRICAL;	break;
-      case KWD_SPHERICAL: 	coords = COORDS_SPHERICAL;	break;
+      gchar *x_idx_2d_str = NULL;
+      gchar *x_idx_3d_str = NULL;
+      gchar *y_idx_3d_str = NULL;
+      gboolean rc =
+	g_markup_collect_attributes (element_name,
+				     attribute_names,
+				     attribute_values,
+				     error,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_COORDS, &coords_str,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_MODE, &mode_str,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_X_INDEX_2D, &x_idx_2d_str,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_X_INDEX_3D, &x_idx_3d_str,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_Y_INDEX_3D, &y_idx_3d_str,
+				     G_MARKUP_COLLECT_INVALID);
+      if (rc) {
+	x_index_2d = atoi (x_idx_2d_str);
+	x_index_3d = atoi (x_idx_3d_str);
+	y_index_3d = atoi (y_idx_3d_str);
+	gint kwd = get_kwd (mode_str);
+	mode = (kwd == KWD_2D) ? MODE_2D : MODE_3D;
+	kwd = get_kwd (coords_str);
+	switch(kwd) {
+	case KWD_CARTESIAN:	coords = COORDS_CARTESIAN;	break;
+	case KWD_POLAR:		coords = COORDS_POLAR;		break;
+	case KWD_CYLINDRICAL: 	coords = COORDS_CYLINDRICAL;	break;
+	case KWD_SPHERICAL: 	coords = COORDS_SPHERICAL;	break;
+	}
+	g_markup_parse_context_push (context, &settings_parser, NULL);
       }
-      g_markup_parse_context_push (context, &settings_parser, NULL);
     }
     break;
   default:
@@ -637,14 +652,16 @@ initial_start_element (GMarkupParseContext *context,
   case KWD_APLVIS:
     {
       gchar *version = NULL;
-      g_markup_collect_attributes (element_name,
-				   attribute_names,
-				   attribute_values,
-				   error,
-				   G_MARKUP_COLLECT_STRING,
-				   KEYWORD_VIS_VERSION, &version,
-				   G_MARKUP_COLLECT_INVALID);
-      g_markup_parse_context_push (context, &aplvis_parser, NULL);
+      gboolean rc =
+	g_markup_collect_attributes (element_name,
+				     attribute_names,
+				     attribute_values,
+				     error,
+				     G_MARKUP_COLLECT_STRING,
+				     KEYWORD_VIS_VERSION, &version,
+				     G_MARKUP_COLLECT_INVALID);
+      if (rc)
+	g_markup_parse_context_push (context, &aplvis_parser, NULL);
     }
     break;
   default:
@@ -653,6 +670,14 @@ initial_start_element (GMarkupParseContext *context,
   }
 }
 
+static void
+parse_error (GMarkupParseContext *context,
+	     GError              *error,
+	     gpointer             user_data)
+{
+  if (error)
+    fprintf (stderr,"Vis file parse error: %s\n", error->message);
+}
 
 static void
 initial_end_element (GMarkupParseContext *context,
@@ -689,7 +714,7 @@ load_file (gchar *file)
      initial_end_element,
      NULL,
      NULL,
-     NULL
+     parse_error
     };
 	
   GMarkupParseContext *initial_context =

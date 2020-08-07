@@ -20,8 +20,9 @@ typedef enum
   } coords_e;
 extern coords_e coords;
 
-extern gint x_index;
-extern gint y_index;
+extern gint x_index_2d;
+extern gint x_index_3d;
+extern gint y_index_3d;
 
 extern GdkRGBA base_colours[];
 extern gint base_colour_count;

@@ -36,20 +36,11 @@ gchar *x_label = NULL;
 gchar *y_label = NULL;
 gchar *z_label = NULL;
 
-#if 0
-#define DEFAULT_BG_RED		0.3
-#define DEFAULT_BG_GREEN	0.5
-#define DEFAULT_BG_BLUE		0.7
-#define DEFAULT_BG_ALPHA	1.0
-
-GdkRGBA bg_colour = {DEFAULT_BG_RED, DEFAULT_BG_GREEN,
-		     DEFAULT_BG_BLUE, DEFAULT_BG_ALPHA};
-#endif
-
 mode_e mode = MODE_2D;
 coords_e coords = COORDS_CARTESIAN;
-gint x_index = -1;
-gint y_index = -1;
+gint x_index_2d = -1;
+gint x_index_3d = -1;
+gint y_index_3d = -1;
 
 static const gchar *raw_default_colours[]
 = {
@@ -354,7 +345,7 @@ markup_dialogue (GtkWidget *widget, gpointer data)
   GtkWidget *left_i_select =
     gtk_spin_button_new_with_range (-1.0, 10000.0, 1.0);
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (left_i_select),
-			     (gdouble)x_index);
+			     (gdouble)x_index_2d);
   gtk_grid_attach (GTK_GRID (left_grid), left_i_select, 1, 0, 1, 1);
   
   /******* end left index selection *******/
@@ -414,7 +405,7 @@ markup_dialogue (GtkWidget *widget, gpointer data)
   GtkWidget *right_xi_select =
     gtk_spin_button_new_with_range (-1.0, 10000.0, 1.0);
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (right_xi_select),
-			     (gdouble)x_index);
+			     (gdouble)x_index_3d);
   gtk_grid_attach (GTK_GRID (right_grid), right_xi_select, 1, 0, 1, 1);
   
   GtkWidget *right_yi_label = gtk_label_new (_ ("Y index select"));
@@ -422,7 +413,7 @@ markup_dialogue (GtkWidget *widget, gpointer data)
   GtkWidget *right_yi_select =
     gtk_spin_button_new_with_range (-1.0, 10000.0, 1.0);
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (right_yi_select),
-			     (gdouble)y_index);
+			     (gdouble)y_index_3d);
   gtk_grid_attach (GTK_GRID (right_grid), right_yi_select, 1, 1, 1, 1);
 
   /******* end index selection *******/
@@ -456,7 +447,7 @@ markup_dialogue (GtkWidget *widget, gpointer data)
 	gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (left_cartesian_radio))
 	? COORDS_CARTESIAN : COORDS_POLAR;
 
-      x_index =
+      x_index_2d =
 	gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (left_i_select));
     }
     else {
@@ -467,10 +458,10 @@ markup_dialogue (GtkWidget *widget, gpointer data)
 	  gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (right_cylindrical_radio))
 	? COORDS_CYLINDRICAL : COORDS_SPHERICAL;
 
-      x_index =
+      x_index_3d =
 	gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (right_xi_select));
 
-      y_index =
+      y_index_3d =
 	gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (right_yi_select));
     }
   }

@@ -268,6 +268,15 @@ da_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
 					   4 * (PLINT)width);
     plinit();
 
+    int cx;
+    for (cx = 0; cx < 16; cx++) 
+      plscol0a (cx,
+		trunc (255.0 * base_colours[cx].red),
+		trunc (255.0 * base_colours[cx].green),
+		trunc (255.0 * base_colours[cx].blue),
+		base_colours[cx].alpha);
+ 
+
     /* set bg */
     cairo_rectangle (cr, 0.0, 0.0, (PLFLT)width, (PLFLT)height);
     cairo_set_source_rgba (cr,
@@ -276,12 +285,14 @@ da_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
 			   bg_colour.blue,
 			   bg_colour.alpha);
     cairo_fill (cr);
-    
+
+    plcol0 (0);			// sets axes
     if (xvec) {
       plenv (xmin, xmax, ymin, ymax, 0, 0);
+      plcol0 (7);			// sets axes
       pllab (x_label, y_label, gtk_entry_get_text (GTK_ENTRY (title)));
       plssym (0.0, 0.75);
-      plcol0 (3);
+      plcol0 (5);		// sets curves
       plline (count, xvec, yvec);
     }
   

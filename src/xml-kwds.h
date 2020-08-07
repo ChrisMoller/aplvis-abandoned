@@ -110,64 +110,68 @@
 #define KWD_COORDS 1025 
 
 
-#define KEYWORD_X_INDEX "x_index"
-#define KWD_X_INDEX 1026 
+#define KEYWORD_X_INDEX_2D "x_index_2d"
+#define KWD_X_INDEX_2D 1026 
 
 
-#define KEYWORD_Y_INDEX "y_index"
-#define KWD_Y_INDEX 1027 
+#define KEYWORD_X_INDEX_3D "x_index_3d"
+#define KWD_X_INDEX_3D 1027 
+
+
+#define KEYWORD_Y_INDEX_3D "y_index_3d"
+#define KWD_Y_INDEX_3D 1028 
 
 
 #define KEYWORD_CARTESIAN "cartesian"
-#define KWD_CARTESIAN 1028 
+#define KWD_CARTESIAN 1029 
 
 
 #define KEYWORD_POLAR "polar"
-#define KWD_POLAR 1029 
+#define KWD_POLAR 1030 
 
 
 #define KEYWORD_CYLINDRICAL "cylindrical"
-#define KWD_CYLINDRICAL 1030 
+#define KWD_CYLINDRICAL 1031 
 
 
 #define KEYWORD_SPHERICAL "spherical"
-#define KWD_SPHERICAL 1031 
+#define KWD_SPHERICAL 1032 
 
 
 #define KEYWORD_2D "2d"
-#define KWD_2D 1032 
+#define KWD_2D 1033 
 
 
 #define KEYWORD_3D "3d"
-#define KWD_3D 1033 
+#define KWD_3D 1034 
 
 
 #define KEYWORD_COLOURS "colours"
-#define KWD_COLOURS 1034 
+#define KWD_COLOURS 1035 
 
 
 #define KEYWORD_COLOUR "colour"
-#define KWD_COLOUR 1035 
+#define KWD_COLOUR 1036 
 
 
 #define KEYWORD_INDEX "index"
-#define KWD_INDEX 1036 
+#define KWD_INDEX 1037 
 
 
 #define KEYWORD_RED "red"
-#define KWD_RED 1037 
+#define KWD_RED 1038 
 
 
 #define KEYWORD_GREEN "green"
-#define KWD_GREEN 1038 
+#define KWD_GREEN 1039 
 
 
 #define KEYWORD_BLUE "blue"
-#define KWD_BLUE 1039 
+#define KWD_BLUE 1040 
 
 
 #define KEYWORD_ALPHA "alpha"
-#define KWD_ALPHA 1040 
+#define KWD_ALPHA 1041 
 
 
 
@@ -204,8 +208,9 @@ keyword_s keywords[] = {
   { KEYWORD_Z_LABEL, KWD_Z_LABEL },
   { KEYWORD_MODE, KWD_MODE },
   { KEYWORD_COORDS, KWD_COORDS },
-  { KEYWORD_X_INDEX, KWD_X_INDEX },
-  { KEYWORD_Y_INDEX, KWD_Y_INDEX },
+  { KEYWORD_X_INDEX_2D, KWD_X_INDEX_2D },
+  { KEYWORD_X_INDEX_3D, KWD_X_INDEX_3D },
+  { KEYWORD_Y_INDEX_3D, KWD_Y_INDEX_3D },
   { KEYWORD_CARTESIAN, KWD_CARTESIAN },
   { KEYWORD_POLAR, KWD_POLAR },
   { KEYWORD_CYLINDRICAL, KWD_CYLINDRICAL },
@@ -221,5 +226,5 @@ keyword_s keywords[] = {
   { KEYWORD_ALPHA, KWD_ALPHA },
 
 };
-gint nr_keys = 41;
+gint nr_keys = 42;
 #endif /* XML_KWDS_H*/
